@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+
+# Environment
+.env
+.env.local
+.env.production
+.env*.local
+
+# Prisma
+packages/db/prisma/migrations/
+
+# Logs
+*.log
+npm-debug.log*
+.build-logs/
+
+# Build
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Uploads
+apps/api/uploads/*
+!apps/api/uploads/.gitkeep
+
+# Backups
+backups/
+*.sql.gz
