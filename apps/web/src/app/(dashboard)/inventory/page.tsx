@@ -147,11 +147,6 @@ export default function InventoryPage() {
     if (activeTab === 'expiring') loadExpiring()
   }, [activeTab, loadExpiring])
 
-  // Initial load for "all" tab
-  useEffect(() => {
-    loadAll()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // ── Computed totals ────────────────────────────────────────────────────────
   const totalCostValue = allItems.reduce((s, i) => s + (i.costValue ?? 0), 0)
