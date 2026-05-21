@@ -401,12 +401,17 @@ export default function NewPurchasePage() {
                     <li
                       key={item.id}
                       onMouseDown={() => addItem(item)}
-                      className="px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 text-sm"
+                      className="px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 text-sm border-b border-gray-100 dark:border-gray-600 last:border-0"
                     >
-                      <span className="font-medium text-gray-900 dark:text-white">{item.name_ar}</span>
-                      {item.barcode && (
-                        <span className="mr-2 text-xs text-gray-500 font-mono">{item.barcode}</span>
-                      )}
+                      <div className="font-medium text-gray-900 dark:text-white">{item.name_ar}</div>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        {item.barcode && (
+                          <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
+                        )}
+                        <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                          {Number(item.costPrice).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                        </span>
+                      </div>
                     </li>
                   ))}
                 </ul>

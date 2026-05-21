@@ -42,6 +42,18 @@ interface CustomerOption {
   currency: string
 }
 
+interface ItemOption {
+  id: string
+  name_ar: string
+  name_en: string
+  barcode: string | null
+  retailPrice: number
+  wholesalePrice: number
+  specialPrice: number
+  dollarPrice: number
+  dinarPrice: number
+}
+
 function resolveItemPrice(item: Record<string, number>, priceType: PriceType, currency: Currency, exchangeRate: number): number {
   const field = PRICE_TYPE_FIELD[priceType]
   const raw = item[field] ?? 0
@@ -73,6 +85,10 @@ export default function NewSalesInvoicePage() {
   const [selectedCustomerName, setSelectedCustomerName] = useState('')
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeError, setBarcodeError] = useState('')
+  const [itemSearch, setItemSearch] = useState('')
+  const [itemOptions, setItemOptions] = useState<ItemOption[]>([])
+  const [showItemDropdown, setShowItemDropdown] = useState(false)
+  const itemRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
@@ -100,6 +116,58 @@ export default function NewSalesInvoicePage() {
     const t = setTimeout(() => { searchCustomers(customerSearch) }, 300)
     return () => clearTimeout(t)
   }, [customerSearch, searchCustomers])
+
+  useEffect(() => {
+    if (!itemSearch.trim()) { setItemOptions([]); setShowItemDropdown(false); return }
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get('/api/items', { params: { search: itemSearch, pageSize: 10 } })
+        setItemOptions(res.data.data?.items ?? [])
+        setShowItemDropdown(true)
+      } catch {
+        setItemOptions([])
+      }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [itemSearch])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (itemRef.current && !itemRef.current.contains(e.target as Node)) {
+        setShowItemDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function addItemFromSearch(item: ItemOption) {
+    const price = resolveItemPrice(item as unknown as Record<string, number>, priceType, currency, exchangeRate)
+    const existingIdx = lines.findIndex((l) => l.itemId === item.id)
+    if (existingIdx >= 0) {
+      setLines((prev) => prev.map((l, i) => {
+        if (i !== existingIdx) return l
+        const newQty = l.quantity + 1
+        return { ...l, quantity: newQty, lineTotal: calcLineTotal(newQty, l.unitPrice, l.discount) }
+      }))
+    } else {
+      setLines((prev) => [
+        ...prev,
+        {
+          itemId: item.id,
+          nameAr: item.name_ar,
+          nameEn: item.name_en,
+          barcode: item.barcode ?? '',
+          quantity: 1,
+          unitPrice: price,
+          discount: 0,
+          lineTotal: calcLineTotal(1, price, 0),
+        },
+      ])
+    }
+    setItemSearch('')
+    setShowItemDropdown(false)
+  }
 
   async function handleBarcodeSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -369,10 +437,12 @@ export default function NewSalesInvoicePage() {
 
         {/* Left columns: barcode + items */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Barcode input */}
+          {/* Barcode + item search */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">مسح الباركود / إضافة صنف</h2>
-            <form onSubmit={handleBarcodeSubmit} className="flex gap-2">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">إضافة صنف</h2>
+
+            {/* Barcode scan */}
+            <form onSubmit={handleBarcodeSubmit} className="flex gap-2 mb-1">
               <input
                 ref={barcodeRef}
                 type="text"
@@ -388,9 +458,51 @@ export default function NewSalesInvoicePage() {
                 إضافة
               </button>
             </form>
-            {barcodeError && (
-              <p className="text-red-500 text-xs mt-2">{barcodeError}</p>
-            )}
+            {barcodeError && <p className="text-red-500 text-xs mb-2">{barcodeError}</p>}
+
+            {/* Divider */}
+            <div className="flex items-center gap-2 my-3">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
+              <span className="text-xs text-gray-400">أو بحث بالاسم</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
+            </div>
+
+            {/* Item name search */}
+            <div ref={itemRef} className="relative">
+              <input
+                type="text"
+                value={itemSearch}
+                onChange={(e) => setItemSearch(e.target.value)}
+                onFocus={() => { if (itemOptions.length > 0) setShowItemDropdown(true) }}
+                placeholder="ابحث باسم الصنف..."
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              />
+              {showItemDropdown && itemOptions.length > 0 && (
+                <div className="absolute z-10 right-0 left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {itemOptions.map((item) => {
+                    const price = resolveItemPrice(item as unknown as Record<string, number>, priceType, currency, exchangeRate)
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onMouseDown={() => addItemFromSearch(item)}
+                        className="w-full text-right px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-0"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">{item.name_ar}</div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          {item.barcode && (
+                            <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
+                          )}
+                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                            {price.toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Items table */}
