@@ -31,7 +31,7 @@ export async function getVouchers(params: {
 
   const [data, total] = await Promise.all([
     prisma.paymentVoucher.findMany({
-      where: where as Parameters<typeof prisma.paymentVoucher.findMany>[0]['where'],
+      where: where as Prisma.PaymentVoucherWhereInput,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -42,7 +42,7 @@ export async function getVouchers(params: {
       },
     }),
     prisma.paymentVoucher.count({
-      where: where as Parameters<typeof prisma.paymentVoucher.count>[0]['where'],
+      where: where as Prisma.PaymentVoucherWhereInput,
     }),
   ])
 

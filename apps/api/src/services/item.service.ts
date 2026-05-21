@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { CreateItemInput, UpdateItemInput } from '../validators/item.validator'
 
 const prisma = new PrismaClient()
@@ -39,13 +39,13 @@ export async function getItems(params: {
 
   const [items, total] = await Promise.all([
     prisma.item.findMany({
-      where: where as Parameters<typeof prisma.item.findMany>[0]['where'],
+      where: where as Prisma.ItemWhereInput,
       include: { category: true, supplier: { select: { id: true, name: true } } },
       skip,
       take: pageSize,
       orderBy: { updatedAt: 'desc' },
     }),
-    prisma.item.count({ where: where as Parameters<typeof prisma.item.count>[0]['where'] }),
+    prisma.item.count({ where: where as Prisma.ItemWhereInput }),
   ])
 
   return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
