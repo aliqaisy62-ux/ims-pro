@@ -7,11 +7,389 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Placeholder — full schema in Section 2
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+  VIEWER
+}
+
+enum Language {
+  ar
+  en
+}
+
+enum PriceType {
+  RETAIL
+  WHOLESALE
+  SPECIAL
+  DOLLAR
+  DINAR
+}
+
+enum PaymentType {
+  CASH
+  CREDIT
+}
+
+enum Currency {
+  USD
+  IQD
+}
+
+enum InvoiceStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+  RETURNED
+}
+
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+}
+
+enum VoucherType {
+  DISBURSEMENT
+  RECEIPT
+}
+
+enum EntityType {
+  CUSTOMER
+  SUPPLIER
+  OTHER
+}
+
+enum TransferType {
+  IN
+  OUT
+}
+
+enum TransferReason {
+  DAMAGE
+  ADJUSTMENT
+  TRANSFER
+  RETURN
+  EXPIRED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  role         UserRole @default(CASHIER)
+  language     Language @default(ar)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salesInvoices       SalesInvoice[]
+  purchaseInvoices    PurchaseInvoice[]
+  expenses            Expense[]
+  stockTransfers      StockTransfer[]
+  paymentVouchers     PaymentVoucher[]
+  exchangeRateHistory ExchangeRateHistory[]
+
+  @@index([username])
+  @@index([isActive])
+}
+
+model Category {
+  id      String @id @default(cuid())
+  name_ar String
+  name_en String
+
+  items Item[]
+
+  @@index([name_ar])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  address   String?
+  balance   Decimal  @default(0) @db.Decimal(15, 3)
+  currency  Currency @default(IQD)
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items            Item[]
+  purchaseInvoices PurchaseInvoice[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model Item {
+  id             String    @id @default(cuid())
+  barcode        String?   @unique
+  name_ar        String
+  name_en        String
+  unit           String    @default("piece")
+  categoryId     String?
+  costPrice      Decimal   @default(0) @db.Decimal(15, 3)
+  retailPrice    Decimal   @default(0) @db.Decimal(15, 3)
+  wholesalePrice Decimal   @default(0) @db.Decimal(15, 3)
+  specialPrice   Decimal   @default(0) @db.Decimal(15, 3)
+  dollarPrice    Decimal   @default(0) @db.Decimal(15, 3)
+  dinarPrice     Decimal   @default(0) @db.Decimal(15, 3)
+  stockQty       Decimal   @default(0) @db.Decimal(15, 3)
+  minimumStock   Decimal   @default(0) @db.Decimal(15, 3)
+  expiryDate     DateTime?
+  supplierId     String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  category          Category?             @relation(fields: [categoryId], references: [id])
+  supplier          Supplier?             @relation(fields: [supplierId], references: [id])
+  salesInvoiceItems SalesInvoiceItem[]
+  purchaseItems     PurchaseInvoiceItem[]
+  stockTransfers    StockTransfer[]
+
+  @@index([barcode])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([isActive])
+  @@index([stockQty])
+  @@index([expiryDate])
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  name        String
+  phone       String?
+  address     String?
+  type        CustomerType @default(RETAIL)
+  creditLimit Decimal      @default(0) @db.Decimal(15, 3)
+  balance     Decimal      @default(0) @db.Decimal(15, 3)
+  currency    Currency     @default(IQD)
+  notes       String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  salesInvoices SalesInvoice[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([isActive])
+  @@index([type])
+}
+
+model SalesInvoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  customerId    String?
+  type          PaymentType   @default(CASH)
+  priceType     PriceType     @default(RETAIL)
+  currency      Currency      @default(IQD)
+  exchangeRate  Decimal       @default(1480) @db.Decimal(15, 3)
+  subtotal      Decimal       @default(0) @db.Decimal(15, 3)
+  discount      Decimal       @default(0) @db.Decimal(15, 3)
+  tax           Decimal       @default(0) @db.Decimal(15, 3)
+  total         Decimal       @default(0) @db.Decimal(15, 3)
+  amountPaid    Decimal       @default(0) @db.Decimal(15, 3)
+  balance       Decimal       @default(0) @db.Decimal(15, 3)
+  notes         String?
+  createdById   String
+  status        InvoiceStatus @default(DRAFT)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customer  Customer?          @relation(fields: [customerId], references: [id])
+  createdBy User               @relation(fields: [createdById], references: [id])
+  items     SalesInvoiceItem[]
+
+  @@index([invoiceNumber])
+  @@index([customerId])
+  @@index([createdById])
+  @@index([status])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model SalesInvoiceItem {
+  id         String    @id @default(cuid())
+  invoiceId  String
+  itemId     String
+  quantity   Decimal   @db.Decimal(15, 3)
+  unitPrice  Decimal   @db.Decimal(15, 3)
+  currency   Currency  @default(IQD)
+  subtotal   Decimal   @db.Decimal(15, 3)
+  expiryDate DateTime?
+
+  invoice SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item    Item         @relation(fields: [itemId], references: [id])
+
+  @@index([invoiceId])
+  @@index([itemId])
+}
+
+model PurchaseInvoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  supplierId    String
+  currency      Currency      @default(IQD)
+  exchangeRate  Decimal       @default(1480) @db.Decimal(15, 3)
+  subtotal      Decimal       @default(0) @db.Decimal(15, 3)
+  discount      Decimal       @default(0) @db.Decimal(15, 3)
+  total         Decimal       @default(0) @db.Decimal(15, 3)
+  amountPaid    Decimal       @default(0) @db.Decimal(15, 3)
+  balance       Decimal       @default(0) @db.Decimal(15, 3)
+  notes         String?
+  createdById   String
+  status        InvoiceStatus @default(DRAFT)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  supplier  Supplier              @relation(fields: [supplierId], references: [id])
+  createdBy User                  @relation(fields: [createdById], references: [id])
+  items     PurchaseInvoiceItem[]
+
+  @@index([invoiceNumber])
+  @@index([supplierId])
+  @@index([createdById])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PurchaseInvoiceItem {
+  id         String    @id @default(cuid())
+  invoiceId  String
+  itemId     String
+  quantity   Decimal   @db.Decimal(15, 3)
+  unitCost   Decimal   @db.Decimal(15, 3)
+  currency   Currency  @default(IQD)
+  subtotal   Decimal   @db.Decimal(15, 3)
+  expiryDate DateTime?
+
+  invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item    Item            @relation(fields: [itemId], references: [id])
+
+  @@index([invoiceId])
+  @@index([itemId])
+}
+
+model ExpenseCategory {
+  id      String @id @default(cuid())
+  name_ar String
+  name_en String
+
+  expenses Expense[]
+
+  @@index([name_ar])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  categoryId  String
+  description String
+  amount      Decimal  @db.Decimal(15, 3)
+  currency    Currency @default(IQD)
+  paidBy      String?
+  date        DateTime @default(now())
+  createdById String
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category  ExpenseCategory @relation(fields: [categoryId], references: [id])
+  createdBy User            @relation(fields: [createdById], references: [id])
+
+  @@index([categoryId])
+  @@index([date])
+  @@index([createdById])
+  @@index([isActive])
+}
+
+model StockTransfer {
+  id          String         @id @default(cuid())
+  type        TransferType
+  itemId      String
+  quantity    Decimal        @db.Decimal(15, 3)
+  reason      TransferReason
+  createdById String
+  notes       String?
+  createdAt   DateTime       @default(now())
+
+  item      Item @relation(fields: [itemId], references: [id])
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([itemId])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model PaymentVoucher {
+  id            String      @id @default(cuid())
+  voucherNumber String      @unique
+  type          VoucherType
+  entityType    EntityType  @default(OTHER)
+  entityId      String?
+  amount        Decimal     @db.Decimal(15, 3)
+  currency      Currency    @default(IQD)
+  exchangeRate  Decimal     @default(1480) @db.Decimal(15, 3)
+  description   String
+  createdById   String
+  createdAt     DateTime    @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([voucherNumber])
+  @@index([type])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model CashStatement {
+  id                String   @id @default(cuid())
+  date              DateTime @unique @db.Date
+  openingBalanceUSD Decimal  @default(0) @db.Decimal(15, 3)
+  openingBalanceIQD Decimal  @default(0) @db.Decimal(15, 3)
+  cashSalesUSD      Decimal  @default(0) @db.Decimal(15, 3)
+  cashSalesIQD      Decimal  @default(0) @db.Decimal(15, 3)
+  creditSales       Decimal  @default(0) @db.Decimal(15, 3)
+  receipts          Decimal  @default(0) @db.Decimal(15, 3)
+  disbursements     Decimal  @default(0) @db.Decimal(15, 3)
+  expenses          Decimal  @default(0) @db.Decimal(15, 3)
+  closingBalanceUSD Decimal  @default(0) @db.Decimal(15, 3)
+  closingBalanceIQD Decimal  @default(0) @db.Decimal(15, 3)
+  isClosed          Boolean  @default(false)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([date])
+  @@index([isClosed])
+}
+
+model ExchangeRateHistory {
+  id          String   @id @default(cuid())
+  rateIQD     Decimal  @db.Decimal(15, 3)
+  changedById String
+  createdAt   DateTime @default(now())
+
+  changedBy User @relation(fields: [changedById], references: [id])
+
+  @@index([createdAt])
+}
+
 model Settings {
   id          String   @id @default(cuid())
   key         String   @unique
   value       String
   description String?
   updatedAt   DateTime @updatedAt
+
+  @@index([key])
 }
