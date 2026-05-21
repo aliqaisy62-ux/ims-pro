@@ -74,7 +74,7 @@ export async function createUser(data: {
   name: string
   username: string
   password: string
-  role: 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER'
+  role: 'ADMIN' | 'ACCOUNTANT' | 'STAFF'
   language: 'ar' | 'en'
 }) {
   const existing = await prisma.user.findFirst({ where: { username: data.username } })
@@ -110,7 +110,7 @@ export async function updateUser(
   id: string,
   data: {
     name?: string
-    role?: 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER'
+    role?: 'ADMIN' | 'ACCOUNTANT' | 'STAFF'
     language?: 'ar' | 'en'
     isActive?: boolean
   }
