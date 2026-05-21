@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { expensesService } from '@/services/expenses.service'
 import api from '@/lib/api'
 
@@ -11,14 +11,14 @@ interface ExpenseCategory {
   name_en: string
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-export default function NewExpensePage() {
+export default function EditExpensePage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
+
   const [categories, setCategories] = useState<ExpenseCategory[]>([])
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     categoryId: '',
@@ -28,19 +28,41 @@ export default function NewExpensePage() {
     description: '',
     paidBy: '',
     notes: '',
-    date: todayISO(),
+    date: '',
   })
 
   useEffect(() => {
-    expensesService.getCategories()
-      .then((res) => setCategories(res.data ?? []))
-      .catch(() => setCategories([]))
+    Promise.all([
+      expensesService.getCategories(),
+      expensesService.getById(id),
+      api.get('/api/settings'),
+    ])
+      .then(([catRes, expRes, settingsRes]) => {
+        setCategories(catRes.data ?? [])
 
-    api.get('/api/settings').then((r) => {
-      const rate = Number(r.data?.data?.exchange_rate)
-      if (rate > 0) setForm((f) => ({ ...f, exchangeRate: String(rate) }))
-    }).catch(() => {})
-  }, [])
+        const exp = expRes.data
+        if (exp) {
+          const rate = Number(exp.exchangeRate ?? 1480)
+          setForm({
+            categoryId: exp.categoryId ?? exp.category?.id ?? '',
+            amount: String(Number(exp.amount)),
+            currency: exp.currency ?? 'IQD',
+            exchangeRate: String(rate),
+            description: exp.description ?? '',
+            paidBy: exp.paidBy ?? '',
+            notes: exp.notes ?? '',
+            date: new Date(exp.date).toISOString().slice(0, 10),
+          })
+        }
+
+        const settingsRate = Number(settingsRes.data?.data?.exchange_rate)
+        if (settingsRate > 0 && !expRes.data?.exchangeRate) {
+          setForm((f) => ({ ...f, exchangeRate: String(settingsRate) }))
+        }
+      })
+      .catch(() => setError('فشل في تحميل بيانات المصروف'))
+      .finally(() => setPageLoading(false))
+  }, [id])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target
@@ -54,7 +76,7 @@ export default function NewExpensePage() {
     setError('')
     setLoading(true)
     try {
-      await expensesService.create({
+      await expensesService.update(id, {
         categoryId: form.categoryId,
         amount: Number(form.amount),
         currency: form.currency,
@@ -67,7 +89,7 @@ export default function NewExpensePage() {
       router.push('/expenses')
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
-      setError(axiosErr.response?.data?.error ?? 'فشل في حفظ المصروف')
+      setError(axiosErr.response?.data?.error ?? 'فشل في تحديث المصروف')
     } finally {
       setLoading(false)
     }
@@ -77,13 +99,21 @@ export default function NewExpensePage() {
     ? (Number(form.amount) * Number(form.exchangeRate)).toLocaleString('ar-IQ', { maximumFractionDigits: 0 })
     : null
 
+  if (pageLoading) {
+    return (
+      <div dir="rtl" className="max-w-lg">
+        <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+      </div>
+    )
+  }
+
   return (
     <div dir="rtl" className="max-w-lg">
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           ← رجوع
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">إضافة مصروف جديد</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">تعديل المصروف</h1>
       </div>
 
       {error && (
@@ -226,7 +256,7 @@ export default function NewExpensePage() {
             disabled={loading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium text-sm"
           >
-            {loading ? 'جار الحفظ...' : 'حفظ المصروف'}
+            {loading ? 'جار الحفظ...' : 'حفظ التعديلات'}
           </button>
           <button
             type="button"

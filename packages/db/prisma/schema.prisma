@@ -290,18 +290,19 @@ model ExpenseCategory {
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  categoryId  String
-  description String
-  amount      Decimal  @db.Decimal(15, 3)
-  currency    Currency @default(IQD)
-  paidBy      String?
-  date        DateTime @default(now())
-  createdById String
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  categoryId   String
+  description  String
+  amount       Decimal  @db.Decimal(15, 3)
+  currency     Currency @default(IQD)
+  exchangeRate Decimal  @default(1480) @db.Decimal(15, 3)
+  paidBy       String?
+  date         DateTime @default(now())
+  createdById  String
+  notes        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   category  ExpenseCategory @relation(fields: [categoryId], references: [id])
   createdBy User            @relation(fields: [createdById], references: [id])
