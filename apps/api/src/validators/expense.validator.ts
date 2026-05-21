@@ -10,7 +10,10 @@ export const createExpenseSchema = z.object({
   categoryId: z.string().cuid(),
   amount: z.number().positive(),
   currency: z.enum(['USD', 'IQD']),
+  exchangeRate: z.number().positive().default(1480),
   description: z.string().optional(),
+  paidBy: z.string().optional(),
+  notes: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 })
 export const updateExpenseSchema = createExpenseSchema.partial()

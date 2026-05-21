@@ -112,7 +112,10 @@ export async function createExpense(data: CreateExpenseInput, userId: string) {
       categoryId: data.categoryId,
       amount: data.amount,
       currency: data.currency,
+      exchangeRate: data.exchangeRate ?? 1480,
       description: data.description ?? '',
+      paidBy: data.paidBy ?? null,
+      notes: data.notes ?? null,
       date: new Date(data.date),
       createdById: userId,
     },
@@ -125,7 +128,10 @@ export async function updateExpense(id: string, data: UpdateExpenseInput) {
   if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
   if (data.amount !== undefined) updateData.amount = data.amount
   if (data.currency !== undefined) updateData.currency = data.currency
+  if (data.exchangeRate !== undefined) updateData.exchangeRate = data.exchangeRate
   if (data.description !== undefined) updateData.description = data.description
+  if (data.paidBy !== undefined) updateData.paidBy = data.paidBy
+  if (data.notes !== undefined) updateData.notes = data.notes
   if (data.date !== undefined) updateData.date = new Date(data.date)
 
   return prisma.expense.update({
@@ -179,9 +185,8 @@ export async function getExpenseSummary(
   for (const expense of expenses) {
     const { categoryId } = expense
     const amountNum = Number(expense.amount)
-    // exchangeRate not in actual schema — treat IQD as-is, USD amounts stored as IQD equivalent
-    // For USD expenses we store in the amount field directly; no exchangeRate field in real schema
-    const amountIQD = expense.currency === 'USD' ? amountNum * 1480 : amountNum
+    const rate = Number(expense.exchangeRate ?? 1480)
+    const amountIQD = expense.currency === 'USD' ? amountNum * rate : amountNum
 
     if (!grouped[categoryId]) {
       grouped[categoryId] = {

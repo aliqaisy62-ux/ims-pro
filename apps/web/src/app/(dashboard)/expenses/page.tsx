@@ -15,7 +15,9 @@ interface Expense {
   date: string
   amount: string | number
   currency: string
+  exchangeRate: number
   description: string
+  paidBy?: string
   category: ExpenseCategory
 }
 
@@ -68,13 +70,15 @@ export default function ExpensesPage() {
   const loadExpenses = useCallback(async () => {
     setListLoading(true)
     try {
-      const params: Record<string, any> = { page, limit }
+      const params: Record<string, string | number> = { page, limit }
       if (filterCategory) params.categoryId = filterCategory
       if (filterFrom) params.from = filterFrom
       if (filterTo) params.to = filterTo
       const res = await expensesService.getAll(params)
       setExpenses(res.data?.data ?? [])
       setTotal(res.data?.total ?? 0)
+    } catch {
+      setExpenses([])
     } finally {
       setListLoading(false)
     }
@@ -241,7 +245,8 @@ export default function ExpensesPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {expenses.map((exp) => {
                 const amountNum = Number(exp.amount)
-                const equivalentIQD = exp.currency === 'USD' ? amountNum * 1480 : amountNum
+                const rate = Number(exp.exchangeRate ?? 1480)
+                const equivalentIQD = exp.currency === 'USD' ? amountNum * rate : amountNum
                 return (
                   <tr key={exp.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(exp.date)}</td>
@@ -258,7 +263,13 @@ export default function ExpensesPage() {
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                       {equivalentIQD.toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 flex gap-3">
+                      <button
+                        onClick={() => router.push(`/expenses/${exp.id}/edit`)}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        تعديل
+                      </button>
                       <button
                         onClick={() => handleDelete(exp.id)}
                         className="text-red-600 hover:text-red-800 text-sm"
