@@ -3,29 +3,6 @@ import { CreateVoucherInput } from '../validators/voucher.validator'
 
 const prisma = new PrismaClient()
 
-// ─── Voucher number generator ─────────────────────────────────────────────────
-
-export async function generateVoucherNumber(): Promise<string> {
-  const now = new Date()
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(now)
-  endOfDay.setHours(23, 59, 59, 999)
-
-  const countToday = await prisma.paymentVoucher.count({
-    where: {
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-  })
-
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
-  const seq = String(countToday + 1).padStart(4, '0')
-  return `VCH-${dateStr}-${seq}`
-}
-
 // ─── Query functions ──────────────────────────────────────────────────────────
 
 export async function getVouchers(params: {
@@ -73,14 +50,25 @@ export async function getVouchers(params: {
 }
 
 export async function getVoucherById(id: string) {
-  return prisma.paymentVoucher.findUnique({
+  const voucher = await prisma.paymentVoucher.findUnique({
     where: { id },
     include: {
-      createdBy: {
-        select: { id: true, name: true },
-      },
+      createdBy: { select: { id: true, name: true } },
     },
   })
+
+  if (!voucher) return null
+
+  let entityName: string | null = null
+  if (voucher.entityType === 'CUSTOMER' && voucher.entityId) {
+    const c = await prisma.customer.findUnique({ where: { id: voucher.entityId }, select: { name: true } })
+    entityName = c?.name ?? null
+  } else if (voucher.entityType === 'SUPPLIER' && voucher.entityId) {
+    const s = await prisma.supplier.findUnique({ where: { id: voucher.entityId }, select: { name: true } })
+    entityName = s?.name ?? null
+  }
+
+  return { ...voucher, entityName }
 }
 
 // ─── Create with transaction ──────────────────────────────────────────────────
