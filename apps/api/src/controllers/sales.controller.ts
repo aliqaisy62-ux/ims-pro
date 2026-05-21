@@ -60,7 +60,8 @@ export async function createInvoice(req: Request, res: Response) {
 
 export async function confirmInvoiceHandler(req: Request, res: Response) {
   try {
-    const invoice = await confirmInvoice(req.params.id, req.user!.id)
+    const amountPaid = req.body?.amountPaid != null ? Number(req.body.amountPaid) : undefined
+    const invoice = await confirmInvoice(req.params.id, req.user!.id, amountPaid)
     res.json({ success: true, data: invoice })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to confirm invoice'

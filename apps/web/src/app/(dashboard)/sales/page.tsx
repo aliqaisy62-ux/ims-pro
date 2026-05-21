@@ -46,6 +46,8 @@ export default function SalesPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -54,6 +56,8 @@ export default function SalesPage() {
       const params: Record<string, string | number> = { page, limit: 20 }
       if (search) params.search = search
       if (status) params.status = status
+      if (fromDate) params.from = fromDate
+      if (toDate) params.to = toDate
       const res = await salesService.getAll(params)
       setInvoices(res.data.data ?? [])
       setTotal(res.data.total ?? 0)
@@ -62,7 +66,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, status])
+  }, [page, search, status, fromDate, toDate])
 
   useEffect(() => { load() }, [load])
 
@@ -80,7 +84,7 @@ export default function SalesPage() {
         </button>
       </div>
 
-      <div className="flex gap-3 mb-4 flex-wrap">
+      <div className="flex gap-3 mb-4 flex-wrap items-center">
         <input
           type="text"
           placeholder="بحث برقم الفاتورة..."
@@ -99,6 +103,30 @@ export default function SalesPage() {
           <option value="CANCELLED">ملغاة</option>
           <option value="RETURNED">مرتجعة</option>
         </select>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span>من</span>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(1) }}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+          <span>إلى</span>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(1) }}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+        </div>
+        {(fromDate || toDate) && (
+          <button
+            onClick={() => { setFromDate(''); setToDate(''); setPage(1) }}
+            className="text-xs text-gray-400 hover:text-red-500"
+          >
+            مسح التواريخ
+          </button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">

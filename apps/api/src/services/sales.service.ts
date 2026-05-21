@@ -159,7 +159,7 @@ export async function createSalesInvoice(data: CreateSalesInvoiceInput, userId: 
   return invoice
 }
 
-export async function confirmInvoice(invoiceId: string, userId: string) {
+export async function confirmInvoice(invoiceId: string, userId: string, amountPaid?: number) {
   const invoice = await prisma.salesInvoice.findFirst({
     where: { id: invoiceId, isActive: true },
     include: { items: true },
@@ -209,9 +209,15 @@ export async function confirmInvoice(invoiceId: string, userId: string) {
         })
       }
 
+      const isCash = invoice.type === 'CASH'
+      const paid = isCash
+        ? new Decimal(amountPaid != null ? amountPaid : invoice.total.toString())
+        : new Decimal(0)
+      const newBalance = isCash ? new Decimal(0) : invoice.total
+
       await tx.salesInvoice.update({
         where: { id: invoiceId },
-        data: { status: 'CONFIRMED' },
+        data: { status: 'CONFIRMED', amountPaid: paid, balance: newBalance },
       })
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
