@@ -18,8 +18,6 @@ dist/
 .env.production
 .env*.local
 
-# Prisma
-packages/db/prisma/migrations/
 
 # Logs
 *.log

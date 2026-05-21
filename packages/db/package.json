@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "main": "./index.ts",
   "scripts": {
+    "build": "tsc",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.15.0"
   },
   "devDependencies": {
+    "bcryptjs": "^2.4.3",
     "prisma": "^5.15.0",
     "tsx": "^4.15.6",
     "typescript": "^5.4.5"
