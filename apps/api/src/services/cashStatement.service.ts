@@ -2,9 +2,6 @@ import { PrismaClient } from '@ims-pro/db'
 
 const prisma = new PrismaClient()
 
-// USD fallback exchange rate used for Expense (no exchangeRate field on model)
-const USD_TO_IQD_FALLBACK = 1480
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface DayData {
@@ -146,12 +143,12 @@ export async function calculateDayData(date: Date): Promise<DayData> {
   `
   const disbursements = Number(disbursementsRows[0]?.total_iqd ?? 0)
 
-  // Expenses (no exchangeRate field — use hardcoded fallback for USD)
+  // Expenses — use stored exchangeRate on each expense record
   const expensesRows = await prisma.$queryRaw<RawExpenseRow[]>`
     SELECT COALESCE(
       SUM(
         CASE
-          WHEN currency = 'USD' THEN amount * ${USD_TO_IQD_FALLBACK}
+          WHEN currency = 'USD' THEN amount * "exchangeRate"
           ELSE amount
         END
       ),
@@ -269,7 +266,7 @@ export async function getStatementByDate(dateStr: string): Promise<StatementResu
 
 // ─── closeStatement ───────────────────────────────────────────────────────────
 
-export async function closeStatement(userId: string, notes?: string) {
+export async function closeStatement(notes?: string) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
