@@ -14,17 +14,19 @@ export const updateExchangeRateSchema = z.object({
   rate: z.number().positive().min(1),
 })
 
+// Only ADMIN can create users — no public registration.
+// Permitted roles: ADMIN, ACCOUNTANT, STAFF (manually assigned by admin only).
 export const createUserSchema = z.object({
   name: z.string().min(2).max(100),
   username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/),
   password: z.string().min(6),
-  role: z.enum(['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER']),
+  role: z.enum(['ADMIN', 'ACCOUNTANT', 'STAFF']),
   language: z.enum(['ar', 'en']).default('ar'),
 })
 
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  role: z.enum(['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER']).optional(),
+  role: z.enum(['ADMIN', 'ACCOUNTANT', 'STAFF']).optional(),
   language: z.enum(['ar', 'en']).optional(),
   isActive: z.boolean().optional(),
 })
