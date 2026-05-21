@@ -101,8 +101,9 @@ export default function PurchaseDetailPage() {
     try {
       await purchasesService.confirm(id)
       await load()
-    } catch {
-      setError('فشل في تأكيد الفاتورة')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string; error?: string } } }
+      setError(axiosErr.response?.data?.message ?? axiosErr.response?.data?.error ?? 'فشل في تأكيد الفاتورة')
     } finally {
       setActionLoading(null)
     }
@@ -120,8 +121,9 @@ export default function PurchaseDetailPage() {
     try {
       await purchasesService.cancel(id)
       await load()
-    } catch {
-      setError('فشل في إلغاء الفاتورة')
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string; error?: string } } }
+      setError(axiosErr.response?.data?.message ?? axiosErr.response?.data?.error ?? 'فشل في إلغاء الفاتورة')
     } finally {
       setActionLoading(null)
     }
@@ -171,11 +173,19 @@ export default function PurchaseDetailPage() {
             </p>
           </div>
         </div>
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[invoice.status] || STATUS_COLORS.DRAFT}`}
-        >
-          {STATUS_LABELS[invoice.status] || invoice.status}
-        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[invoice.status] || STATUS_COLORS.DRAFT}`}
+          >
+            {STATUS_LABELS[invoice.status] || invoice.status}
+          </span>
+          <button
+            onClick={() => window.open(`/purchases/${invoice.id}/print`, '_blank')}
+            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+          >
+            🖨️ طباعة
+          </button>
+        </div>
       </div>
 
       {error && (

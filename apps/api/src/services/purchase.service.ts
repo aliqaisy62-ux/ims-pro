@@ -214,10 +214,13 @@ export async function confirmInvoice(invoiceId: string, userId: string) {
         },
       })
 
-      // Confirm invoice
       await tx.purchaseInvoice.update({
         where: { id: invoiceId },
-        data: { status: 'CONFIRMED' },
+        data: {
+          status: 'CONFIRMED',
+          balance: invoice.total,
+          amountPaid: new Prisma.Decimal(0),
+        },
       })
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
@@ -288,7 +291,10 @@ export async function cancelInvoice(invoiceId: string, userId: string) {
 
       await tx.purchaseInvoice.update({
         where: { id: invoiceId },
-        data: { status: 'CANCELLED' },
+        data: {
+          status: 'CANCELLED',
+          ...(wasConfirmed ? { balance: new Prisma.Decimal(0) } : {}),
+        },
       })
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }

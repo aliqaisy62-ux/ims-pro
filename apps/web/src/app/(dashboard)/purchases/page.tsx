@@ -41,6 +41,8 @@ export default function PurchasesPage() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -49,6 +51,8 @@ export default function PurchasesPage() {
       const params: Record<string, string | number> = { page, limit: 20 }
       if (search) params.search = search
       if (status) params.status = status
+      if (fromDate) params.from = fromDate
+      if (toDate) params.to = toDate
       const res = await purchasesService.getAll(params)
       setInvoices(res.data.data)
       setTotal(res.data.total)
@@ -57,7 +61,7 @@ export default function PurchasesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, status])
+  }, [page, search, status, fromDate, toDate])
 
   useEffect(() => {
     load()
@@ -87,7 +91,7 @@ export default function PurchasesPage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-4 items-center">
         <input
           type="text"
           placeholder="بحث برقم الفاتورة..."
@@ -105,6 +109,30 @@ export default function PurchasesPage() {
           <option value="CONFIRMED">مؤكدة</option>
           <option value="CANCELLED">ملغاة</option>
         </select>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span>من</span>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(1) }}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+          <span>إلى</span>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(1) }}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+          />
+        </div>
+        {(fromDate || toDate) && (
+          <button
+            onClick={() => { setFromDate(''); setToDate(''); setPage(1) }}
+            className="text-xs text-gray-400 hover:text-red-500"
+          >
+            مسح التواريخ
+          </button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
@@ -122,13 +150,16 @@ export default function PurchasesPage() {
                 <th className="px-4 py-3 text-right font-medium">العملة</th>
                 <th className="px-4 py-3 text-right font-medium">الحالة</th>
                 <th className="px-4 py-3 text-right font-medium">التاريخ</th>
-                <th className="px-4 py-3 text-right font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                  <td className="px-4 py-3 font-mono font-medium text-gray-900 dark:text-white">
+                <tr
+                  key={inv.id}
+                  onClick={() => router.push(`/purchases/${inv.id}`)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors"
+                >
+                  <td className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400">
                     {inv.invoiceNumber}
                   </td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
@@ -145,16 +176,8 @@ export default function PurchasesPage() {
                       {STATUS_LABELS[inv.status] || inv.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                     {new Date(inv.createdAt).toLocaleDateString('ar-IQ')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => router.push(`/purchases/${inv.id}`)}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      عرض
-                    </button>
                   </td>
                 </tr>
               ))}
