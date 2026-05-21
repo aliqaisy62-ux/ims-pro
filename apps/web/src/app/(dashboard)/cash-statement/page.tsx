@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { cashStatementService } from '@/services/cashStatement.service'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -348,9 +348,8 @@ export default function CashStatementPage() {
                   const rowDateStr = row.date.slice(0, 10)
                   const isExpanded = expandedDate === rowDateStr
                   return (
-                    <>
+                    <React.Fragment key={row.id}>
                       <tr
-                        key={row.id}
                         onClick={() => handleRowClick(row.date)}
                         className="hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors"
                       >
@@ -384,7 +383,7 @@ export default function CashStatementPage() {
 
                       {/* Expanded detail row */}
                       {isExpanded && (
-                        <tr key={`${row.id}-detail`}>
+                        <tr>
                           <td colSpan={6} className="bg-blue-50 dark:bg-blue-900/10 px-6 py-4">
                             {expandedLoading ? (
                               <p className="text-sm text-gray-500">جار التحميل...</p>
@@ -453,7 +452,7 @@ export default function CashStatementPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </tbody>

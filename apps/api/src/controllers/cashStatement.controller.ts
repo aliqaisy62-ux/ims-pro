@@ -33,7 +33,7 @@ export async function getByDate(req: Request, res: Response) {
 export async function closeToday(req: Request, res: Response) {
   try {
     const notes = req.body?.notes as string | undefined
-    const data = await closeStatement(req.user!.id, notes)
+    const data = await closeStatement(notes)
     res.json({ success: true, data })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to close statement'
