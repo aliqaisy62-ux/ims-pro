@@ -165,8 +165,8 @@ export default function StockPage() {
       setTransferType('IN')
       setReason('ADJUSTMENT')
       loadTransfers()
-    } catch (err: any) {
-      const serverMsg = err?.response?.data?.error
+    } catch (err: unknown) {
+      const serverMsg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       if (serverMsg === 'INSUFFICIENT_STOCK') {
         setFormMsg({ type: 'error', text: 'الكمية المطلوبة أكبر من المخزون الحالي' })
       } else {
