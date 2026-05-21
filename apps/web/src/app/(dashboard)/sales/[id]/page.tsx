@@ -33,6 +33,7 @@ interface Invoice {
   subtotal: number
   discount: number
   total: number
+  amountPaid: number
   balance: number
   notes: string | null
   status: InvoiceStatus
@@ -179,9 +180,17 @@ export default function SalesInvoiceDetailPage() {
             </p>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_CLASSES[invoice.status]}`}>
-          {STATUS_LABELS[invoice.status]}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_CLASSES[invoice.status]}`}>
+            {STATUS_LABELS[invoice.status]}
+          </span>
+          <button
+            onClick={() => window.open(`/sales/${invoice.id}/print`, '_blank')}
+            className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm flex items-center gap-1"
+          >
+            🖨️ طباعة
+          </button>
+        </div>
       </div>
 
       {/* Action error */}
@@ -251,6 +260,32 @@ export default function SalesInvoiceDetailPage() {
               {Number(invoice.total).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {invoice.currency}
             </span>
           </div>
+          {invoice.status === 'CONFIRMED' && invoice.type === 'CASH' && Number(invoice.amountPaid) > 0 && (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">المبلغ المستلم</span>
+                <span className="font-medium text-green-600 dark:text-green-400">
+                  {Number(invoice.amountPaid).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {invoice.currency}
+                </span>
+              </div>
+              {Number(invoice.amountPaid) > Number(invoice.total) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">الباقي للعميل</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">
+                    {(Number(invoice.amountPaid) - Number(invoice.total)).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {invoice.currency}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          {invoice.type === 'CREDIT' && invoice.status === 'CONFIRMED' && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">الرصيد المتبقي</span>
+              <span className={`font-medium ${Number(invoice.balance) > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                {Number(invoice.balance).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {invoice.currency}
+              </span>
+            </div>
+          )}
           {invoice.notes && (
             <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700 rounded p-2 mt-2">
               {invoice.notes}

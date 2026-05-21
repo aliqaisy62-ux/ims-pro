@@ -42,11 +42,17 @@ interface CustomerOption {
   currency: string
 }
 
+interface CustomerDetail {
+  balance: number
+  creditLimit: number | null
+}
+
 interface ItemOption {
   id: string
   name_ar: string
   name_en: string
   barcode: string | null
+  stockQty: number
   retailPrice: number
   wholesalePrice: number
   specialPrice: number
@@ -83,6 +89,7 @@ export default function NewSalesInvoicePage() {
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([])
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [selectedCustomerName, setSelectedCustomerName] = useState('')
+  const [customerDetail, setCustomerDetail] = useState<CustomerDetail | null>(null)
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeError, setBarcodeError] = useState('')
   const [itemSearch, setItemSearch] = useState('')
@@ -92,12 +99,31 @@ export default function NewSalesInvoicePage() {
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Auto-focus barcode on mount
+  // Pay modal state
+  const [showPayModal, setShowPayModal] = useState(false)
+  const [paidAmount, setPaidAmount] = useState<number>(0)
+
+  // Load exchange rate from settings on mount
   useEffect(() => {
+    api.get('/api/settings').then((r) => {
+      const rate = Number(r.data?.data?.exchange_rate)
+      if (rate > 0) setExchangeRate(rate)
+    }).catch(() => {})
     barcodeRef.current?.focus()
   }, [])
 
-  // Subtotal and total calculations
+  // Fetch customer credit details when selecting for CREDIT
+  useEffect(() => {
+    if (!customerId || paymentType !== 'CREDIT') {
+      setCustomerDetail(null)
+      return
+    }
+    api.get(`/api/customers/${customerId}`).then((r) => {
+      const c = r.data?.data
+      if (c) setCustomerDetail({ balance: Number(c.balance), creditLimit: c.creditLimit != null ? Number(c.creditLimit) : null })
+    }).catch(() => setCustomerDetail(null))
+  }, [customerId, paymentType])
+
   const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0)
   const discountAmount = subtotal * (discount / 100)
   const total = subtotal - discountAmount
@@ -249,23 +275,34 @@ export default function NewSalesInvoicePage() {
       await salesService.create(buildPayload())
       router.push('/sales')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'فشل في حفظ المسودة'
-      setSubmitError(msg)
+      setSubmitError(err instanceof Error ? err.message : 'فشل في حفظ المسودة')
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleConfirm() {
+  // For CASH: open payment modal. For CREDIT: confirm directly.
+  function handleConfirmClick() {
     if (lines.length === 0) { setSubmitError('أضف صنفاً واحداً على الأقل'); return }
     if (paymentType === 'CREDIT' && !customerId) { setSubmitError('الفاتورة الآجلة تتطلب تحديد عميل'); return }
+    setSubmitError('')
+    if (paymentType === 'CASH') {
+      setPaidAmount(Math.ceil(total))
+      setShowPayModal(true)
+    } else {
+      doConfirm(undefined)
+    }
+  }
+
+  async function doConfirm(amountPaid: number | undefined) {
+    setShowPayModal(false)
     setLoading(true)
     setSubmitError('')
     try {
       const created = await salesService.create(buildPayload())
       const invoiceId = created.data?.id
       if (!invoiceId) throw new Error('فشل في إنشاء الفاتورة')
-      await salesService.confirm(invoiceId)
+      await salesService.confirm(invoiceId, amountPaid != null ? { amountPaid } : undefined)
       router.push(`/sales/${invoiceId}`)
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } }
@@ -275,6 +312,8 @@ export default function NewSalesInvoicePage() {
       setLoading(false)
     }
   }
+
+  const change = paidAmount - total
 
   return (
     <div dir="rtl" className="max-w-5xl mx-auto">
@@ -286,7 +325,7 @@ export default function NewSalesInvoicePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Right column: settings */}
+        {/* Settings column */}
         <div className="lg:col-span-1 space-y-4">
           {/* Price type */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
@@ -366,15 +405,33 @@ export default function NewSalesInvoicePage() {
               العميل {paymentType === 'CREDIT' && <span className="text-red-500">*</span>}
             </h2>
             {selectedCustomerName ? (
-              <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 rounded-lg px-3 py-2">
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{selectedCustomerName}</span>
-                <button
-                  type="button"
-                  onClick={() => { setCustomerId(''); setSelectedCustomerName(''); setCustomerSearch('') }}
-                  className="text-red-500 hover:text-red-700 text-xs mr-2"
-                >
-                  حذف
-                </button>
+              <div>
+                <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 rounded-lg px-3 py-2">
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{selectedCustomerName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setCustomerId(''); setSelectedCustomerName(''); setCustomerSearch(''); setCustomerDetail(null) }}
+                    className="text-red-500 hover:text-red-700 text-xs mr-2"
+                  >
+                    حذف
+                  </button>
+                </div>
+                {customerDetail && paymentType === 'CREDIT' && (
+                  <div className="mt-2 text-xs space-y-1 px-1">
+                    <div className="flex justify-between text-gray-500">
+                      <span>الرصيد الحالي</span>
+                      <span className={customerDetail.balance > 0 ? 'text-red-500 font-medium' : 'text-green-600 font-medium'}>
+                        {customerDetail.balance.toLocaleString('ar-IQ')} {currency}
+                      </span>
+                    </div>
+                    {customerDetail.creditLimit != null && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>حد الائتمان</span>
+                        <span className="font-medium">{customerDetail.creditLimit.toLocaleString('ar-IQ')} {currency}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -435,13 +492,12 @@ export default function NewSalesInvoicePage() {
           </div>
         </div>
 
-        {/* Left columns: barcode + items */}
+        {/* Items column */}
         <div className="lg:col-span-2 space-y-4">
           {/* Barcode + item search */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">إضافة صنف</h2>
 
-            {/* Barcode scan */}
             <form onSubmit={handleBarcodeSubmit} className="flex gap-2 mb-1">
               <input
                 ref={barcodeRef}
@@ -460,14 +516,12 @@ export default function NewSalesInvoicePage() {
             </form>
             {barcodeError && <p className="text-red-500 text-xs mb-2">{barcodeError}</p>}
 
-            {/* Divider */}
             <div className="flex items-center gap-2 my-3">
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
               <span className="text-xs text-gray-400">أو بحث بالاسم</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
             </div>
 
-            {/* Item name search */}
             <div ref={itemRef} className="relative">
               <input
                 type="text"
@@ -481,6 +535,7 @@ export default function NewSalesInvoicePage() {
                 <div className="absolute z-10 right-0 left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {itemOptions.map((item) => {
                     const price = resolveItemPrice(item as unknown as Record<string, number>, priceType, currency, exchangeRate)
+                    const stock = Number(item.stockQty)
                     return (
                       <button
                         key={item.id}
@@ -489,12 +544,17 @@ export default function NewSalesInvoicePage() {
                         className="w-full text-right px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-0"
                       >
                         <div className="font-medium text-gray-900 dark:text-white">{item.name_ar}</div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          {item.barcode && (
-                            <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
-                          )}
-                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                            {price.toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                        <div className="flex items-center justify-between mt-0.5">
+                          <div className="flex items-center gap-3">
+                            {item.barcode && (
+                              <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
+                            )}
+                            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                              {price.toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                            </span>
+                          </div>
+                          <span className={`text-xs font-medium ${stock <= 0 ? 'text-red-500' : stock <= 5 ? 'text-amber-500' : 'text-green-600'}`}>
+                            مخزون: {stock.toLocaleString('ar-IQ')}
                           </span>
                         </div>
                       </button>
@@ -595,14 +655,12 @@ export default function NewSalesInvoicePage() {
             </div>
           )}
 
-          {/* Error */}
           {submitError && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
               {submitError}
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-3">
             <button
               type="button"
@@ -614,7 +672,7 @@ export default function NewSalesInvoicePage() {
             </button>
             <button
               type="button"
-              onClick={handleConfirm}
+              onClick={handleConfirmClick}
               disabled={loading || lines.length === 0}
               className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium text-sm"
             >
@@ -623,6 +681,64 @@ export default function NewSalesInvoicePage() {
           </div>
         </div>
       </div>
+
+      {/* Cash payment modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div dir="rtl" className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">تسوية الدفع النقدي</h2>
+
+            <div className="space-y-3 mb-5">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">المبلغ المستحق</span>
+                <span className="font-bold text-gray-900 dark:text-white text-base">
+                  {total.toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  المبلغ المستلم
+                </label>
+                <input
+                  type="number"
+                  min={total}
+                  step="250"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(Number(e.target.value))}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-bold text-center"
+                />
+              </div>
+
+              <div className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                <span className="text-gray-500">الباقي للعميل</span>
+                <span className={`font-bold text-lg ${change >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {Math.max(0, change).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPayModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => doConfirm(paidAmount)}
+                disabled={paidAmount < total}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-bold"
+              >
+                تأكيد الدفع
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
