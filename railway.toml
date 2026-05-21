@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+releaseCommand = "npx prisma migrate deploy --schema /app/packages/db/prisma/schema.prisma"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
