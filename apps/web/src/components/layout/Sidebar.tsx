@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 
-type Role = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER'
+type Role = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER' | 'ACCOUNTANT' | 'STAFF'
 
 interface NavItem {
   href: string
@@ -15,19 +15,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',      icon: '📊', labelAr: 'لوحة التحكم',   roles: ['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER'] },
-  { href: '/sales',          icon: '🧾', labelAr: 'المبيعات',       roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
-  { href: '/purchases',      icon: '🛒', labelAr: 'المشتريات',      roles: ['ADMIN', 'MANAGER'] },
-  { href: '/customers',      icon: '👥', labelAr: 'العملاء',        roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
-  { href: '/suppliers',      icon: '🏭', labelAr: 'الموردون',       roles: ['ADMIN', 'MANAGER'] },
-  { href: '/items',          icon: '📦', labelAr: 'المنتجات',       roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
-  { href: '/expenses',       icon: '💸', labelAr: 'المصروفات',      roles: ['ADMIN', 'MANAGER'] },
-  { href: '/vouchers',       icon: '📋', labelAr: 'السندات',        roles: ['ADMIN', 'MANAGER'] },
-  { href: '/stock',          icon: '🔄', labelAr: 'حركة المخزون',  roles: ['ADMIN', 'MANAGER'] },
-  { href: '/inventory',      icon: '📉', labelAr: 'الجرد',          roles: ['ADMIN', 'MANAGER', 'VIEWER'] },
-  { href: '/cash-statement', icon: '💰', labelAr: 'كشف الصندوق',   roles: ['ADMIN', 'MANAGER'] },
-  { href: '/reports',        icon: '📈', labelAr: 'التقارير',       roles: ['ADMIN', 'MANAGER', 'VIEWER'] },
-  { href: '/settings',       icon: '⚙️', labelAr: 'الإعدادات',     roles: ['ADMIN'] },
+  { href: '/dashboard',      icon: '📊', labelAr: 'لوحة التحكم',    roles: ['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER', 'ACCOUNTANT', 'STAFF'] },
+  { href: '/sales',          icon: '🧾', labelAr: 'المبيعات',        roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF'] },
+  { href: '/purchases',      icon: '🛒', labelAr: 'المشتريات',       roles: ['ADMIN', 'MANAGER'] },
+  { href: '/customers',      icon: '👥', labelAr: 'العملاء',         roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF', 'ACCOUNTANT'] },
+  { href: '/suppliers',      icon: '🏭', labelAr: 'الموردون',        roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+  { href: '/items',          icon: '📦', labelAr: 'المنتجات',        roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF'] },
+  { href: '/expenses',       icon: '💸', labelAr: 'المصروفات',       roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+  { href: '/vouchers',       icon: '📋', labelAr: 'السندات',         roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+  { href: '/stock',          icon: '🔄', labelAr: 'حركة المخزون',   roles: ['ADMIN', 'MANAGER'] },
+  { href: '/inventory',      icon: '📉', labelAr: 'الجرد',           roles: ['ADMIN', 'MANAGER', 'VIEWER', 'ACCOUNTANT'] },
+  { href: '/cash-statement', icon: '💰', labelAr: 'كشف الصندوق',    roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+  { href: '/reports',        icon: '📈', labelAr: 'التقارير',        roles: ['ADMIN', 'MANAGER', 'VIEWER', 'ACCOUNTANT'] },
+  { href: '/staff',          icon: '👤', labelAr: 'إدارة الموظفين',  roles: ['ADMIN'] },
+  { href: '/settings',       icon: '⚙️', labelAr: 'الإعدادات',      roles: ['ADMIN'] },
 ]
 
 interface SidebarProps {

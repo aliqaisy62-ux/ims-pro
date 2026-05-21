@@ -13,11 +13,11 @@ import {
 const router = Router()
 router.use(verifyToken)
 
-router.get('/', listInvoices)
-router.post('/', createInvoice)
-router.get('/:id', getInvoice)
-router.post('/:id/confirm', confirmInvoiceHandler)
-router.post('/:id/cancel', requireRole('MANAGER', 'ADMIN'), cancelInvoiceHandler)
-router.post('/:id/return', requireRole('MANAGER', 'ADMIN'), returnInvoiceHandler)
+router.get('/', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), listInvoices)
+router.post('/', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), createInvoice)
+router.get('/:id', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), getInvoice)
+router.post('/:id/confirm', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), confirmInvoiceHandler)
+router.post('/:id/cancel', requireRole('ADMIN', 'MANAGER'), cancelInvoiceHandler)
+router.post('/:id/return', requireRole('ADMIN', 'MANAGER'), returnInvoiceHandler)
 
 export default router

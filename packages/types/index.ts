@@ -1,5 +1,5 @@
 // User types
-export type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER'
+export type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER' | 'ACCOUNTANT' | 'STAFF'
 export type Language = 'ar' | 'en'
 
 // Item types

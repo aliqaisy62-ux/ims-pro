@@ -21,8 +21,8 @@ router.get('/categories', listCategories)
 router.get('/barcode/:barcode', lookupByBarcode)
 router.get('/', listItems)
 router.get('/:id', getItem)
-router.post('/', requireRole('ADMIN', 'MANAGER'), validateRequest(createItemSchema), addItem)
-router.put('/:id', requireRole('ADMIN', 'MANAGER'), validateRequest(updateItemSchema), editItem)
+router.post('/', requireRole('ADMIN', 'MANAGER', 'STAFF'), validateRequest(createItemSchema), addItem)
+router.put('/:id', requireRole('ADMIN', 'MANAGER', 'STAFF'), validateRequest(updateItemSchema), editItem)
 router.delete('/:id', requireRole('ADMIN'), deleteItem)
 
 export default router
