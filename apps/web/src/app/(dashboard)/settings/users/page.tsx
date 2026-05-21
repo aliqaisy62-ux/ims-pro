@@ -3,28 +3,35 @@
 import { useState, useEffect, useCallback } from 'react'
 import { settingsService } from '@/services/settings.service'
 
+type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER' | 'ACCOUNTANT' | 'STAFF'
+type CreatableRole = 'ADMIN' | 'ACCOUNTANT' | 'STAFF'
+
 interface User {
   id: string
   name: string
   username: string
-  role: 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER'
+  role: UserRole
   language: 'ar' | 'en'
   isActive: boolean
   createdAt: string
 }
 
-const ROLE_LABELS: Record<string, string> = {
+const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'مدير النظام',
   MANAGER: 'مدير',
   CASHIER: 'كاشير',
   VIEWER: 'مشاهد',
+  ACCOUNTANT: 'محاسب',
+  STAFF: 'موظف',
 }
 
-const ROLE_COLORS: Record<string, string> = {
+const ROLE_COLORS: Record<UserRole, string> = {
   ADMIN: 'bg-red-100 text-red-700',
   MANAGER: 'bg-purple-100 text-purple-700',
   CASHIER: 'bg-blue-100 text-blue-700',
   VIEWER: 'bg-gray-100 text-gray-600',
+  ACCOUNTANT: 'bg-emerald-100 text-emerald-700',
+  STAFF: 'bg-orange-100 text-orange-700',
 }
 
 function formatDate(dateStr: string): string {
@@ -45,7 +52,7 @@ export default function UsersPage() {
   const [formName, setFormName] = useState('')
   const [formUsername, setFormUsername] = useState('')
   const [formPassword, setFormPassword] = useState('')
-  const [formRole, setFormRole] = useState<User['role']>('CASHIER')
+  const [formRole, setFormRole] = useState<CreatableRole>('ACCOUNTANT')
   const [formLanguage, setFormLanguage] = useState<'ar' | 'en'>('ar')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formMsg, setFormMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -107,13 +114,14 @@ export default function UsersPage() {
       setFormName('')
       setFormUsername('')
       setFormPassword('')
-      setFormRole('CASHIER')
+      setFormRole('ACCOUNTANT')
       setFormLanguage('ar')
       setShowForm(false)
       loadUsers()
-    } catch (err: any) {
-      const serverError = err?.response?.data?.error
-      if (err?.response?.status === 409 || serverError?.includes('مستخدم')) {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { error?: string } } }
+      const serverError = axiosErr?.response?.data?.error
+      if (axiosErr?.response?.status === 409 || serverError?.includes('مستخدم')) {
         setFormMsg({ type: 'error', text: 'اسم المستخدم مستخدم بالفعل، يرجى اختيار اسم آخر' })
       } else {
         setFormMsg({ type: 'error', text: 'فشل في إنشاء المستخدم' })
@@ -154,7 +162,7 @@ export default function UsersPage() {
     setFormName('')
     setFormUsername('')
     setFormPassword('')
-    setFormRole('CASHIER')
+    setFormRole('ACCOUNTANT')
     setFormLanguage('ar')
   }
 
@@ -245,13 +253,12 @@ export default function UsersPage() {
                 </label>
                 <select
                   value={formRole}
-                  onChange={(e) => setFormRole(e.target.value as User['role'])}
+                  onChange={(e) => setFormRole(e.target.value as CreatableRole)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="ADMIN">مدير النظام</option>
-                  <option value="MANAGER">مدير</option>
-                  <option value="CASHIER">كاشير</option>
-                  <option value="VIEWER">مشاهد</option>
+                  <option value="ACCOUNTANT">محاسب</option>
+                  <option value="STAFF">موظف</option>
                 </select>
               </div>
 
