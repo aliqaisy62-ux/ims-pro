@@ -12,6 +12,8 @@ enum UserRole {
   MANAGER
   CASHIER
   VIEWER
+  ACCOUNTANT
+  STAFF
 }
 
 enum Language {

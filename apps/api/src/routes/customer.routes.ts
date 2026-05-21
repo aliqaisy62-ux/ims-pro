@@ -11,8 +11,8 @@ router.use(verifyToken)
 router.get('/', listCustomers)
 router.get('/:id', getCustomer)
 router.get('/:id/statement', customerStatement)
-router.post('/', requireRole('ADMIN', 'MANAGER'), validateRequest(createCustomerSchema), addCustomer)
-router.put('/:id', requireRole('ADMIN', 'MANAGER'), validateRequest(updateCustomerSchema), editCustomer)
+router.post('/', requireRole('ADMIN', 'MANAGER', 'STAFF', 'ACCOUNTANT'), validateRequest(createCustomerSchema), addCustomer)
+router.put('/:id', requireRole('ADMIN', 'MANAGER', 'STAFF', 'ACCOUNTANT'), validateRequest(updateCustomerSchema), editCustomer)
 router.delete('/:id', requireRole('ADMIN'), deleteCustomer)
 
 export default router

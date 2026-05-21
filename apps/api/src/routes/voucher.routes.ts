@@ -6,8 +6,8 @@ import { listVouchers, getVoucher, createVoucherHandler } from '../controllers/v
 const router = Router()
 router.use(verifyToken)
 
-router.get('/', listVouchers)
-router.post('/', requireRole('MANAGER', 'ADMIN'), createVoucherHandler)
-router.get('/:id', getVoucher)
+router.get('/', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), listVouchers)
+router.post('/', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), createVoucherHandler)
+router.get('/:id', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), getVoucher)
 
 export default router
