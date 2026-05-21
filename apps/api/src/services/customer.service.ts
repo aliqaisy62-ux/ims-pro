@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { CreateCustomerInput, UpdateCustomerInput } from '../validators/customer.validator'
 
 const prisma = new PrismaClient()
@@ -22,12 +22,12 @@ export async function getCustomers(params: {
 
   const [customers, total] = await Promise.all([
     prisma.customer.findMany({
-      where: where as Parameters<typeof prisma.customer.findMany>[0]['where'],
+      where: where as Prisma.CustomerWhereInput,
       skip,
       take: pageSize,
       orderBy: { name: 'asc' },
     }),
-    prisma.customer.count({ where: where as Parameters<typeof prisma.customer.count>[0]['where'] }),
+    prisma.customer.count({ where: where as Prisma.CustomerWhereInput }),
   ])
   return { customers, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
 }

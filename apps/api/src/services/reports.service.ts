@@ -1,4 +1,4 @@
-import { PrismaClient } from '@ims-pro/db'
+import { PrismaClient, Prisma } from '@ims-pro/db'
 
 const prisma = new PrismaClient()
 
@@ -38,7 +38,7 @@ export async function getSalesReport(params: {
   if (customerId) where.customerId = customerId
 
   const invoices = await prisma.salesInvoice.findMany({
-    where: where as Parameters<typeof prisma.salesInvoice.findMany>[0]['where'],
+    where: where as Prisma.SalesInvoiceWhereInput,
     orderBy: { createdAt: 'desc' },
     include: {
       customer: { select: { id: true, name: true } },
@@ -100,7 +100,7 @@ export async function getPurchasesReport(params: {
   if (supplierId) where.supplierId = supplierId
 
   const invoices = await prisma.purchaseInvoice.findMany({
-    where: where as Parameters<typeof prisma.purchaseInvoice.findMany>[0]['where'],
+    where: where as Prisma.PurchaseInvoiceWhereInput,
     orderBy: { createdAt: 'desc' },
     include: {
       supplier: { select: { id: true, name: true } },
@@ -317,7 +317,7 @@ export async function getCustomerStatement(params: {
   if (hasDateFilter) invoicesWhere.createdAt = dateFilter
 
   const salesInvoices = await prisma.salesInvoice.findMany({
-    where: invoicesWhere as Parameters<typeof prisma.salesInvoice.findMany>[0]['where'],
+    where: invoicesWhere as Prisma.SalesInvoiceWhereInput,
     select: {
       id: true,
       invoiceNumber: true,
@@ -337,7 +337,7 @@ export async function getCustomerStatement(params: {
   if (hasDateFilter) vouchersWhere.createdAt = dateFilter
 
   const receipts = await prisma.paymentVoucher.findMany({
-    where: vouchersWhere as Parameters<typeof prisma.paymentVoucher.findMany>[0]['where'],
+    where: vouchersWhere as Prisma.PaymentVoucherWhereInput,
     select: {
       id: true,
       voucherNumber: true,
@@ -419,7 +419,7 @@ export async function getSupplierStatement(params: {
   if (hasDateFilter) purchasesWhere.createdAt = dateFilter
 
   const purchaseInvoices = await prisma.purchaseInvoice.findMany({
-    where: purchasesWhere as Parameters<typeof prisma.purchaseInvoice.findMany>[0]['where'],
+    where: purchasesWhere as Prisma.PurchaseInvoiceWhereInput,
     select: {
       id: true,
       invoiceNumber: true,
@@ -439,7 +439,7 @@ export async function getSupplierStatement(params: {
   if (hasDateFilter) vouchersWhere.createdAt = dateFilter
 
   const disbursements = await prisma.paymentVoucher.findMany({
-    where: vouchersWhere as Parameters<typeof prisma.paymentVoucher.findMany>[0]['where'],
+    where: vouchersWhere as Prisma.PaymentVoucherWhereInput,
     select: {
       id: true,
       voucherNumber: true,

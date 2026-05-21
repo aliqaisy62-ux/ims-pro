@@ -28,7 +28,7 @@ export async function getStockTransfers(params: {
 
   const [data, total] = await Promise.all([
     prisma.stockTransfer.findMany({
-      where: where as Parameters<typeof prisma.stockTransfer.findMany>[0]['where'],
+      where: where as Prisma.StockTransferWhereInput,
       include: {
         item: {
           select: { id: true, name_ar: true, name_en: true, barcode: true, unit: true },
@@ -42,7 +42,7 @@ export async function getStockTransfers(params: {
       take: limit,
     }),
     prisma.stockTransfer.count({
-      where: where as Parameters<typeof prisma.stockTransfer.count>[0]['where'],
+      where: where as Prisma.StockTransferWhereInput,
     }),
   ])
 
@@ -126,7 +126,7 @@ export async function getInventory(params: {
   }
 
   const items = await prisma.item.findMany({
-    where: where as Parameters<typeof prisma.item.findMany>[0]['where'],
+    where: where as Prisma.ItemWhereInput,
     include: { category: true },
     orderBy: { name_ar: 'asc' },
   })

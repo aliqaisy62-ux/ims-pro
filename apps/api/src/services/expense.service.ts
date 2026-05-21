@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { CreateExpenseInput, UpdateExpenseInput } from '../validators/expense.validator'
 
 const prisma = new PrismaClient()
@@ -78,7 +78,7 @@ export async function getExpenses(params: {
 
   const [data, total] = await Promise.all([
     prisma.expense.findMany({
-      where: where as Parameters<typeof prisma.expense.findMany>[0]['where'],
+      where: where as Prisma.ExpenseWhereInput,
       skip,
       take: limit,
       orderBy: { date: 'desc' },
@@ -87,7 +87,7 @@ export async function getExpenses(params: {
       },
     }),
     prisma.expense.count({
-      where: where as Parameters<typeof prisma.expense.count>[0]['where'],
+      where: where as Prisma.ExpenseWhereInput,
     }),
   ])
 
