@@ -31,20 +31,25 @@ const pathTitleMap: Record<string, string> = {
   '/reports/supplier-statement':  'كشف حساب المورد',
   '/settings':       'الإعدادات',
   '/settings/users': 'المستخدمون',
+  '/staff':          'إدارة الموظفين',
 }
 
 const roleLabelMap: Record<string, string> = {
-  ADMIN:   'مدير النظام',
-  MANAGER: 'مدير',
-  CASHIER: 'كاشير',
-  VIEWER:  'مشاهد',
+  ADMIN:      'مدير النظام',
+  MANAGER:    'مدير',
+  CASHIER:    'كاشير',
+  VIEWER:     'مشاهد',
+  ACCOUNTANT: 'محاسب',
+  STAFF:      'موظف',
 }
 
 const roleBadgeColor: Record<string, string> = {
-  ADMIN:   '#ef4444',
-  MANAGER: '#3b82f6',
-  CASHIER: '#22c55e',
-  VIEWER:  '#a855f7',
+  ADMIN:      '#ef4444',
+  MANAGER:    '#3b82f6',
+  CASHIER:    '#22c55e',
+  VIEWER:     '#a855f7',
+  ACCOUNTANT: '#059669',
+  STAFF:      '#f97316',
 }
 
 function getPageTitle(pathname: string): string {
