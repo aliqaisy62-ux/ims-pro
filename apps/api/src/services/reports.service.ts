@@ -50,9 +50,13 @@ export async function getSalesReport(params: {
   let cashSalesUSD = 0
   let creditSalesIQD = 0
   let creditSalesUSD = 0
+  let totalIQD = 0
 
   for (const inv of invoices) {
     const total = Number(inv.total)
+    const totalInIQD = inv.currency === 'USD' ? total * Number(inv.exchangeRate) : total
+    totalIQD += totalInIQD
+
     if (inv.type === 'CASH') {
       if (inv.currency === 'IQD') cashSalesIQD += total
       else cashSalesUSD += total
@@ -61,13 +65,6 @@ export async function getSalesReport(params: {
       else creditSalesUSD += total
     }
   }
-
-  const USD_TO_IQD = 1480
-  const totalIQD =
-    cashSalesIQD +
-    cashSalesUSD * USD_TO_IQD +
-    creditSalesIQD +
-    creditSalesUSD * USD_TO_IQD
 
   return {
     invoices,
@@ -133,7 +130,6 @@ export async function getPurchasesReport(params: {
 
 export async function getProfitReport(params: { from: string; to: string }) {
   const { from, to } = params
-  const USD_TO_IQD = 1480
 
   // Fetch all confirmed sales invoice items in range with their items
   const salesItems = await prisma.salesInvoiceItem.findMany({
@@ -221,12 +217,12 @@ export async function getProfitReport(params: { from: string; to: string }) {
         lte: endOfDay(to),
       },
     },
-    select: { amount: true, currency: true },
+    select: { amount: true, currency: true, exchangeRate: true },
   })
 
   const totalExpenses = expenses.reduce((sum, e) => {
     const amt = Number(e.amount)
-    return sum + (e.currency === 'USD' ? amt * USD_TO_IQD : amt)
+    return sum + (e.currency === 'USD' ? amt * Number(e.exchangeRate) : amt)
   }, 0)
 
   const netProfit = totalGrossProfit - totalExpenses
