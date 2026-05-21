@@ -14,6 +14,7 @@ interface Voucher {
   type: VoucherType
   entityType: EntityType
   entityId: string | null
+  entityName: string | null
   amount: string | number
   currency: Currency
   exchangeRate: string | number
@@ -93,20 +94,9 @@ export default function VoucherDetailPage() {
   }
 
   return (
-    <>
-      {/* Print styles */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; }
-          #voucher-print { display: block !important; }
-          #voucher-print .no-print { display: none !important; }
-        }
-        #voucher-print { display: block; }
-      `}</style>
-
-      <div id="voucher-print" dir="rtl" className="max-w-2xl mx-auto">
+      <div dir="rtl" className="max-w-2xl mx-auto">
         {/* Header actions */}
-        <div className="flex items-center justify-between mb-6 no-print">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/vouchers')}
@@ -119,8 +109,8 @@ export default function VoucherDetailPage() {
             </h1>
           </div>
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center gap-2"
+            onClick={() => router.push(`/vouchers/${id}/print`)}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
           >
             طباعة
           </button>
@@ -147,10 +137,8 @@ export default function VoucherDetailPage() {
             <div className="col-span-2">
               <p className="text-xs text-gray-500 mb-0.5">الجهة</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {ENTITY_LABELS[voucher.entityType]}
-                {voucher.entityId && (
-                  <span className="mr-2 text-xs text-gray-400 font-mono">({voucher.entityId})</span>
-                )}
+                <span className="text-gray-500 font-normal ml-1">{ENTITY_LABELS[voucher.entityType]}:</span>
+                {voucher.entityName ?? '—'}
               </p>
             </div>
 
@@ -227,6 +215,5 @@ export default function VoucherDetailPage() {
           </div>
         </div>
       </div>
-    </>
   )
 }
