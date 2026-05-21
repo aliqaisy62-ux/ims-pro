@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { purchasesService } from '@/services/purchases.service'
 import api from '@/lib/api'
@@ -13,6 +13,11 @@ interface SupplierOption {
   currency: string
 }
 
+interface SupplierDetail {
+  balance: number
+  phone: string | null
+}
+
 interface ItemOption {
   id: string
   name_ar: string
@@ -20,6 +25,7 @@ interface ItemOption {
   barcode: string | null
   unit: string
   costPrice: number
+  stockQty: number
 }
 
 interface LineItem {
@@ -55,6 +61,7 @@ export default function NewPurchasePage() {
   const [supplierSearch, setSupplierSearch] = useState('')
   const [supplierOptions, setSupplierOptions] = useState<SupplierOption[]>([])
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierOption | null>(null)
+  const [supplierDetail, setSupplierDetail] = useState<SupplierDetail | null>(null)
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false)
   const supplierRef = useRef<HTMLDivElement>(null)
 
@@ -67,6 +74,14 @@ export default function NewPurchasePage() {
   // ── Form state
   const [currency, setCurrency] = useState<'IQD' | 'USD'>('IQD')
   const [exchangeRate, setExchangeRate] = useState<number>(1480)
+
+  // Load exchange rate from settings on mount
+  useEffect(() => {
+    api.get('/api/settings').then((r) => {
+      const rate = Number(r.data?.data?.exchange_rate)
+      if (rate > 0) setExchangeRate(rate)
+    }).catch(() => {})
+  }, [])
   const [invoiceDiscount, setInvoiceDiscount] = useState<number>(0)
   const [notes, setNotes] = useState('')
   const [lines, setLines] = useState<LineItem[]>([])
@@ -115,7 +130,16 @@ export default function NewPurchasePage() {
   function clearSupplier() {
     setSelectedSupplier(null)
     setSupplierSearch('')
+    setSupplierDetail(null)
   }
+
+  useEffect(() => {
+    if (!selectedSupplier) return
+    api.get(`/api/suppliers/${selectedSupplier.id}`).then((r) => {
+      const s = r.data?.data
+      if (s) setSupplierDetail({ balance: Number(s.balance), phone: s.phone ?? null })
+    }).catch(() => setSupplierDetail(null))
+  }, [selectedSupplier])
 
   // ─── Item search ───────────────────────────────────────────────────────────
 
@@ -313,9 +337,23 @@ export default function NewPurchasePage() {
                 )}
               </div>
               {selectedSupplier && (
-                <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                  تم اختيار: {selectedSupplier.name}
-                </p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    ✓ {selectedSupplier.name}
+                  </p>
+                  {supplierDetail && (
+                    <div className="flex gap-4 text-xs text-gray-500">
+                      <span>
+                        الرصيد:&nbsp;
+                        <span className={supplierDetail.balance > 0 ? 'text-red-500 font-medium' : 'text-green-600 font-medium'}>
+                          {supplierDetail.balance.toLocaleString('ar-IQ')} {currency}
+                        </span>
+                      </span>
+                      {supplierDetail.phone && <span>📞 {supplierDetail.phone}</span>}
+                    </div>
+                  )}
+                  <button onClick={clearSupplier} className="text-xs text-red-400 hover:text-red-600">تغيير المورد</button>
+                </div>
               )}
             </div>
 
@@ -404,12 +442,17 @@ export default function NewPurchasePage() {
                       className="px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 text-sm border-b border-gray-100 dark:border-gray-600 last:border-0"
                     >
                       <div className="font-medium text-gray-900 dark:text-white">{item.name_ar}</div>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        {item.barcode && (
-                          <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
-                        )}
-                        <span className="text-xs font-semibold text-green-600 dark:text-green-400">
-                          {Number(item.costPrice).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-3">
+                          {item.barcode && (
+                            <span className="text-xs text-gray-400 font-mono">{item.barcode}</span>
+                          )}
+                          <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                            {Number(item.costPrice).toLocaleString('ar-IQ', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {currency}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          مخزون: {Number(item.stockQty).toLocaleString('ar-IQ')}
                         </span>
                       </div>
                     </li>
