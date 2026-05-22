@@ -5,20 +5,12 @@ const prisma = new PrismaClient()
 
 // ─── Invoice Number Generator ─────────────────────────────────────────────────
 
-export async function generateInvoiceNumber(): Promise<string> {
+async function generatePurchaseNumberInTx(tx: Prisma.TransactionClient): Promise<string> {
   const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const dateStr = `${year}${month}${day}`
-
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
   const startOfDay = new Date(now)
   startOfDay.setHours(0, 0, 0, 0)
-
-  const count = await prisma.purchaseInvoice.count({
-    where: { createdAt: { gte: startOfDay } },
-  })
-
+  const count = await tx.purchaseInvoice.count({ where: { createdAt: { gte: startOfDay } } })
   return `PUR-${dateStr}-${String(count + 1).padStart(4, '0')}`
 }
 
@@ -102,13 +94,9 @@ export async function createPurchaseInvoice(
   data: CreatePurchaseInvoiceInput,
   userId: string
 ) {
-  const invoiceNumber = await generateInvoiceNumber()
-
-  // Calculate line totals
   const lines = data.items.map((line) => {
     const lineSubtotal = line.quantity * line.unitCost
-    const lineDiscount = lineSubtotal * (line.discount / 100)
-    const lineTotal = lineSubtotal - lineDiscount
+    const lineTotal = lineSubtotal - lineSubtotal * (line.discount / 100)
     return { ...line, subtotal: lineTotal }
   })
 
@@ -116,40 +104,53 @@ export async function createPurchaseInvoice(
   const invoiceDiscountAmount = subtotal * (data.discount / 100)
   const total = subtotal - invoiceDiscountAmount
 
-  return prisma.purchaseInvoice.create({
-    data: {
-      invoiceNumber,
-      supplierId: data.supplierId,
-      currency: data.currency,
-      exchangeRate: new Prisma.Decimal(data.exchangeRate),
-      subtotal: new Prisma.Decimal(subtotal),
-      discount: new Prisma.Decimal(invoiceDiscountAmount),
-      total: new Prisma.Decimal(total),
-      notes: data.notes ?? null,
-      status: 'DRAFT',
-      createdById: userId,
-      items: {
-        create: lines.map((line) => ({
-          itemId: line.itemId,
-          quantity: new Prisma.Decimal(line.quantity),
-          unitCost: new Prisma.Decimal(line.unitCost),
-          currency: data.currency,
-          subtotal: new Prisma.Decimal(line.subtotal),
-          expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
-        })),
-      },
-    },
-    include: {
-      supplier: true,
-      items: {
-        include: {
-          item: {
-            select: { id: true, name_ar: true, name_en: true, barcode: true, unit: true },
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const invoiceNumber = await generatePurchaseNumberInTx(tx)
+        return tx.purchaseInvoice.create({
+          data: {
+            invoiceNumber,
+            supplierId: data.supplierId,
+            currency: data.currency,
+            exchangeRate: new Prisma.Decimal(data.exchangeRate),
+            subtotal: new Prisma.Decimal(subtotal),
+            discount: new Prisma.Decimal(invoiceDiscountAmount),
+            total: new Prisma.Decimal(total),
+            notes: data.notes ?? null,
+            status: 'DRAFT',
+            createdById: userId,
+            items: {
+              create: lines.map((line) => ({
+                itemId: line.itemId,
+                quantity: new Prisma.Decimal(line.quantity),
+                unitCost: new Prisma.Decimal(line.unitCost),
+                currency: data.currency,
+                subtotal: new Prisma.Decimal(line.subtotal),
+                expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
+              })),
+            },
           },
-        },
-      },
-    },
-  })
+          include: {
+            supplier: true,
+            items: {
+              include: {
+                item: { select: { id: true, name_ar: true, name_en: true, barcode: true, unit: true } },
+              },
+            },
+          },
+        })
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code
+      if ((code === 'P2002' || code === 'P2034') && attempt < 9) {
+        await new Promise(r => setTimeout(r, Math.random() * 30 + 5))
+        continue
+      }
+      throw e
+    }
+  }
+  throw new Error('Failed to generate unique purchase invoice number after retries')
 }
 
 // ─── Confirm ──────────────────────────────────────────────────────────────────

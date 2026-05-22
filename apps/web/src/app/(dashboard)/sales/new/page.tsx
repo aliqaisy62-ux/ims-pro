@@ -531,9 +531,11 @@ export default function NewSalesInvoicePage() {
                 placeholder="ابحث باسم الصنف..."
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
               />
-              {showItemDropdown && itemOptions.length > 0 && (
+              {showItemDropdown && (
                 <div className="absolute z-10 right-0 left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {itemOptions.map((item) => {
+                  {itemOptions.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500 text-center">لا توجد نتائج</div>
+                  ) : itemOptions.map((item) => {
                     const price = resolveItemPrice(item as unknown as Record<string, number>, priceType, currency, exchangeRate)
                     const stock = Number(item.stockQty)
                     return (

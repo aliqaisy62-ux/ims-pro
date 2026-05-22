@@ -4,25 +4,19 @@ import { CreateSalesInvoiceInput } from '../validators/sales.validator'
 
 const prisma = new PrismaClient()
 
-export async function generateInvoiceNumber(): Promise<string> {
+async function generateInvoiceNumberInTx(tx: Prisma.TransactionClient): Promise<string> {
+  // Advisory lock serializes number generation across concurrent transactions
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(20260001)`
   const now = new Date()
   const startOfDay = new Date(now)
   startOfDay.setHours(0, 0, 0, 0)
   const endOfDay = new Date(now)
   endOfDay.setHours(23, 59, 59, 999)
-
-  const countToday = await prisma.salesInvoice.count({
-    where: {
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
+  const countToday = await tx.salesInvoice.count({
+    where: { createdAt: { gte: startOfDay, lte: endOfDay } },
   })
-
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
-  const seq = String(countToday + 1).padStart(4, '0')
-  return `INV-${dateStr}-${seq}`
+  return `INV-${dateStr}-${String(countToday + 1).padStart(4, '0')}`
 }
 
 export async function getSalesInvoices(params: {
@@ -98,65 +92,71 @@ export async function createSalesInvoice(data: CreateSalesInvoiceInput, userId: 
   const exchangeRateDecimal = new Decimal(data.exchangeRate)
   const invoiceDiscountPct = new Decimal(data.discount ?? 0)
 
-  // Calculate line totals
   const lineData = data.items.map((line) => {
     const qty = new Decimal(line.quantity)
     const price = new Decimal(line.unitPrice)
     const discountFactor = new Decimal(1).minus(new Decimal(line.discount ?? 0).div(100))
-    const lineSubtotal = qty.mul(price).mul(discountFactor)
     return {
       itemId: line.itemId,
       quantity: qty,
       unitPrice: price,
-      subtotal: lineSubtotal,
+      subtotal: qty.mul(price).mul(discountFactor),
       currency: data.currency as 'USD' | 'IQD',
     }
   })
 
   const subtotal = lineData.reduce((acc, l) => acc.plus(l.subtotal), new Decimal(0))
-  const discountFactor = new Decimal(1).minus(invoiceDiscountPct.div(100))
-  const total = subtotal.mul(discountFactor)
+  const total = subtotal.mul(new Decimal(1).minus(invoiceDiscountPct.div(100)))
 
-  const invoiceNumber = await generateInvoiceNumber()
-
-  const invoice = await prisma.salesInvoice.create({
-    data: {
-      invoiceNumber,
-      customerId: data.customerId ?? null,
-      type: data.paymentType,
-      priceType: data.priceType,
-      currency: data.currency,
-      exchangeRate: exchangeRateDecimal,
-      subtotal,
-      discount: invoiceDiscountPct,
-      total,
-      balance: total,
-      notes: data.notes ?? null,
-      status: 'DRAFT',
-      createdById: userId,
-      items: {
-        create: lineData.map((l) => ({
-          itemId: l.itemId,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          subtotal: l.subtotal,
-          currency: l.currency,
-        })),
-      },
-    },
-    include: {
-      customer: true,
-      items: {
-        include: {
-          item: {
-            select: { id: true, name_ar: true, name_en: true, barcode: true },
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const invoiceNumber = await generateInvoiceNumberInTx(tx)
+        return tx.salesInvoice.create({
+          data: {
+            invoiceNumber,
+            customerId: data.customerId ?? null,
+            type: data.paymentType,
+            priceType: data.priceType,
+            currency: data.currency,
+            exchangeRate: exchangeRateDecimal,
+            subtotal,
+            discount: invoiceDiscountPct,
+            total,
+            balance: total,
+            notes: data.notes ?? null,
+            status: 'DRAFT',
+            createdById: userId,
+            items: {
+              create: lineData.map((l) => ({
+                itemId: l.itemId,
+                quantity: l.quantity,
+                unitPrice: l.unitPrice,
+                subtotal: l.subtotal,
+                currency: l.currency,
+              })),
+            },
           },
-        },
-      },
-    },
-  })
-
-  return invoice
+          include: {
+            customer: true,
+            items: {
+              include: {
+                item: { select: { id: true, name_ar: true, name_en: true, barcode: true } },
+              },
+            },
+          },
+        })
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+    } catch (e: unknown) {
+      const code = (e as { code?: string })?.code
+      if ((code === 'P2002' || code === 'P2034') && attempt < 9) {
+        await new Promise(r => setTimeout(r, Math.random() * 30 + 5))
+        continue
+      }
+      throw e
+    }
+  }
+  throw new Error('Failed to generate unique invoice number after retries')
 }
 
 export async function confirmInvoice(invoiceId: string, userId: string, amountPaid?: number) {
@@ -172,56 +172,49 @@ export async function confirmInvoice(invoiceId: string, userId: string, amountPa
     throw err
   }
 
-  await prisma.$transaction(
-    async (tx) => {
-      for (const line of invoice.items) {
+  await prisma.$transaction(async (tx) => {
+    for (const line of invoice.items) {
+      const requiredQty = new Decimal(line.quantity.toString())
+      // Atomic conditional decrement — row lock prevents concurrent oversell
+      const updated = await tx.item.updateMany({
+        where: { id: line.itemId, stockQty: { gte: requiredQty.toNumber() } },
+        data: { stockQty: { decrement: requiredQty.toNumber() } },
+      })
+      if (updated.count === 0) {
         const dbItem = await tx.item.findUnique({ where: { id: line.itemId } })
         if (!dbItem) throw new Error(`ITEM_NOT_FOUND:${line.itemId}`)
-
-        const currentStock = new Decimal(dbItem.stockQty.toString())
-        const requiredQty = new Decimal(line.quantity.toString())
-
-        if (currentStock.lessThan(requiredQty)) {
-          throw new Error(`INSUFFICIENT_STOCK:${dbItem.name_ar}:${dbItem.name_en}`)
-        }
-
-        await tx.item.update({
-          where: { id: line.itemId },
-          data: { stockQty: { decrement: requiredQty.toNumber() } },
-        })
-
-        await tx.stockTransfer.create({
-          data: {
-            itemId: line.itemId,
-            type: 'OUT',
-            reason: 'TRANSFER',
-            quantity: line.quantity,
-            notes: `فاتورة مبيعات: ${invoice.invoiceNumber}`,
-            createdById: userId,
-          },
-        })
+        throw new Error(`INSUFFICIENT_STOCK:${dbItem.name_ar}:${dbItem.name_en}`)
       }
-
-      if (invoice.type === 'CREDIT' && invoice.customerId) {
-        await tx.customer.update({
-          where: { id: invoice.customerId },
-          data: { balance: { increment: new Decimal(invoice.total.toString()).toNumber() } },
-        })
-      }
-
-      const isCash = invoice.type === 'CASH'
-      const paid = isCash
-        ? new Decimal(amountPaid != null ? amountPaid : invoice.total.toString())
-        : new Decimal(0)
-      const newBalance = isCash ? new Decimal(0) : invoice.total
-
-      await tx.salesInvoice.update({
-        where: { id: invoiceId },
-        data: { status: 'CONFIRMED', amountPaid: paid, balance: newBalance },
+      await tx.stockTransfer.create({
+        data: {
+          itemId: line.itemId,
+          type: 'OUT',
+          reason: 'TRANSFER',
+          quantity: line.quantity,
+          notes: `فاتورة مبيعات: ${invoice.invoiceNumber}`,
+          createdById: userId,
+        },
       })
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-  )
+    }
+
+    if (invoice.type === 'CREDIT' && invoice.customerId) {
+      await tx.customer.update({
+        where: { id: invoice.customerId },
+        data: { balance: { increment: new Decimal(invoice.total.toString()).toNumber() } },
+      })
+    }
+
+    const isCash = invoice.type === 'CASH'
+    const paid = isCash
+      ? new Decimal(amountPaid != null ? amountPaid : invoice.total.toString())
+      : new Decimal(0)
+    const newBalance = isCash ? new Decimal(0) : invoice.total
+
+    await tx.salesInvoice.update({
+      where: { id: invoiceId },
+      data: { status: 'CONFIRMED', amountPaid: paid, balance: newBalance },
+    })
+  })
 
   return getSalesInvoiceById(invoiceId)
 }

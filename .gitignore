@@ -43,3 +43,6 @@ apps/api/uploads/*
 # Backups
 backups/
 *.sql.gz
+
+# Claude Code local settings
+.claude/settings.local.json
