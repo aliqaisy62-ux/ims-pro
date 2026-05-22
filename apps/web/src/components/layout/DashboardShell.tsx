@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { PageErrorBoundary } from '@/components/PageErrorBoundary'
 
 const SIDEBAR_FULL = 256
 const SIDEBAR_COLLAPSED = 64
@@ -59,7 +60,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
         }}
       >
         <div style={{ padding: 24 }}>
-          {children}
+          <PageErrorBoundary>
+            {children}
+          </PageErrorBoundary>
         </div>
       </main>
     </div>

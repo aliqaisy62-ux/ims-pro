@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Try silent refresh on mount to restore session from HttpOnly cookie
     axios
       .post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/refresh`,
         {},
         { withCredentials: true }
       )
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(username: string, password: string) {
     const { data } = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/login`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/login`,
       { username, password },
       { withCredentials: true }
     )
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await axios
       .post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/logout`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/logout`,
         {},
         { withCredentials: true }
       )
