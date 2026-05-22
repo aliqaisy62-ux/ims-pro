@@ -25,7 +25,13 @@ app.use(helmet())
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001').split(',')
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return cb(null, true)
+    // Allow any LAN/private-network origin in development
+    if (
+      allowedOrigins.includes(origin) ||
+      /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)
+    ) return cb(null, true)
     cb(new Error(`CORS: origin ${origin} not allowed`))
   },
   credentials: true,

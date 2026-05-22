@@ -8,15 +8,16 @@ async function generateInvoiceNumberInTx(tx: Prisma.TransactionClient): Promise<
   // Advisory lock serializes number generation across concurrent transactions
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(20260001)`
   const now = new Date()
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(now)
-  endOfDay.setHours(23, 59, 59, 999)
-  const countToday = await tx.salesInvoice.count({
-    where: { createdAt: { gte: startOfDay, lte: endOfDay } },
-  })
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
-  return `INV-${dateStr}-${String(countToday + 1).padStart(4, '0')}`
+  const prefix = `INV-${dateStr}-`
+  // Use MAX of existing sequence numbers for today to avoid gaps from deletions
+  const result = await tx.$queryRaw<{ max_num: string | null }[]>`
+    SELECT MAX(SUBSTRING("invoiceNumber" FROM ${prefix.length + 1}::int)::int) AS max_num
+    FROM "SalesInvoice"
+    WHERE "invoiceNumber" LIKE ${prefix + '%'}
+  `
+  const maxNum = result[0]?.max_num ? Number(result[0].max_num) : 0
+  return `${prefix}${String(maxNum + 1).padStart(4, '0')}`
 }
 
 export async function getSalesInvoices(params: {

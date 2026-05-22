@@ -46,3 +46,7 @@ backups/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Test / screenshot artifacts
+*.png
+screenshot.js
