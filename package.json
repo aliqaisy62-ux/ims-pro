@@ -9,10 +9,12 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "start": "turbo run start",
     "lint": "turbo run lint",
-    "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
-    "db:seed": "turbo run db:seed"
+    "db:generate": "npx prisma generate --schema=packages/db/prisma/schema.prisma",
+    "db:migrate": "npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma",
+    "db:seed": "npx tsx packages/db/seed.ts",
+    "setup": "npm install && npm run db:generate && npm run db:migrate && npm run db:seed"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
