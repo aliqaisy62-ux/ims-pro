@@ -11,7 +11,7 @@ export function getAccessToken() {
 }
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001',
   withCredentials: true,
 })
 
@@ -53,7 +53,7 @@ api.interceptors.response.use(
     isRefreshing = true
     try {
       const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/refresh`,
         {},
         { withCredentials: true }
       )
