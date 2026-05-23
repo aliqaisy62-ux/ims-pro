@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { stockService } from '@/services/stock.service'
 import api from '@/lib/api'
+import { TableSkeleton } from '@/components/ui/TableSkeleton'
+import { VirtualTable } from '@/components/ui/VirtualTable'
 
 type Tab = 'all' | 'lowStock' | 'expiring'
 
@@ -232,83 +234,70 @@ export default function InventoryPage() {
           {/* Table */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {allLoading ? (
-              <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+              <TableSkeleton cols={9} />
             ) : allItems.length === 0 ? (
               <div className="p-8 text-center text-gray-500">لا توجد أصناف</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    <tr>
-                      <th className="px-4 py-3 text-right font-medium">الباركود</th>
-                      <th className="px-4 py-3 text-right font-medium">المنتج</th>
-                      <th className="px-4 py-3 text-right font-medium">الفئة</th>
-                      <th className="px-4 py-3 text-right font-medium">الوحدة</th>
-                      <th className="px-4 py-3 text-right font-medium">الكمية</th>
-                      <th className="px-4 py-3 text-right font-medium">الحد الأدنى</th>
-                      <th className="px-4 py-3 text-right font-medium">تكلفة الوحدة</th>
-                      <th className="px-4 py-3 text-right font-medium">إجمالي التكلفة</th>
-                      <th className="px-4 py-3 text-right font-medium">إجمالي سعر البيع</th>
+              <VirtualTable
+                items={allItems}
+                rowHeight={52}
+                visibleRows={12}
+                cols={9}
+                minWidth={900}
+                renderHeader={() => (
+                  <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    <th className="px-4 py-3 text-right font-medium">الباركود</th>
+                    <th className="px-4 py-3 text-right font-medium">المنتج</th>
+                    <th className="px-4 py-3 text-right font-medium">الفئة</th>
+                    <th className="px-4 py-3 text-right font-medium">الوحدة</th>
+                    <th className="px-4 py-3 text-right font-medium">الكمية</th>
+                    <th className="px-4 py-3 text-right font-medium">الحد الأدنى</th>
+                    <th className="px-4 py-3 text-right font-medium">تكلفة الوحدة</th>
+                    <th className="px-4 py-3 text-right font-medium">إجمالي التكلفة</th>
+                    <th className="px-4 py-3 text-right font-medium">إجمالي سعر البيع</th>
+                  </tr>
+                )}
+                renderRow={(item) => {
+                  const qty = Number(item.stockQty)
+                  const minStock = Number(item.minimumStock)
+                  const isLow = minStock > 0 && qty <= minStock
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 divide-y divide-gray-100 dark:divide-gray-700">
+                      <td className="px-4 py-3 text-gray-400 font-mono text-xs">{item.barcode || '—'}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900 dark:text-white">{item.name_ar}</div>
+                        <div className="text-gray-400 text-xs">{item.name_en}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">{item.category?.name_ar || '—'}</td>
+                      <td className="px-4 py-3 text-gray-500">{item.unit}</td>
+                      <td className="px-4 py-3">
+                        <span className={`font-semibold ${isLow ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                          {formatNum(item.stockQty, 3)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">{formatNum(item.minimumStock, 3)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatNum(item.costPrice)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatNum(item.costValue)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatNum(item.retailValue)}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {allItems.map((item) => {
-                      const qty = Number(item.stockQty)
-                      const minStock = Number(item.minimumStock)
-                      const isLow = minStock > 0 && qty <= minStock
-                      return (
-                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-                          <td className="px-4 py-3 text-gray-400 font-mono text-xs">
-                            {item.barcode || '—'}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {item.name_ar}
-                            </div>
-                            <div className="text-gray-400 text-xs">{item.name_en}</div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">
-                            {item.category?.name_ar || '—'}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">{item.unit}</td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`font-semibold ${isLow ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}
-                            >
-                              {formatNum(item.stockQty, 3)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500">{formatNum(item.minimumStock, 3)}</td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                            {formatNum(item.costPrice)}
-                          </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                            {formatNum(item.costValue)}
-                          </td>
-                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                            {formatNum(item.retailValue)}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                  {allLoaded && allItems.length > 0 && (
-                    <tfoot className="bg-gray-50 dark:bg-gray-700 font-bold">
-                      <tr>
-                        <td colSpan={7} className="px-4 py-3 text-gray-900 dark:text-white">
-                          الإجمالي ({allItems.length} صنف)
-                        </td>
-                        <td className="px-4 py-3 text-gray-900 dark:text-white">
-                          {formatNum(totalCostValue)} د.ع
-                        </td>
-                        <td className="px-4 py-3 text-gray-900 dark:text-white">
-                          {formatNum(totalRetailValue)} د.ع
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
+                  )
+                }}
+                footer={
+                  allLoaded && allItems.length > 0 ? (
+                    <tr className="bg-gray-50 dark:bg-gray-700 font-bold">
+                      <td colSpan={7} className="px-4 py-3 text-gray-900 dark:text-white">
+                        الإجمالي ({allItems.length} صنف)
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {formatNum(totalCostValue)} د.ع
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {formatNum(totalRetailValue)} د.ع
+                      </td>
+                    </tr>
+                  ) : undefined
+                }
+              />
             )}
           </div>
         </>
@@ -320,7 +309,7 @@ export default function InventoryPage() {
       {activeTab === 'lowStock' && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           {lowLoading ? (
-            <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+            <TableSkeleton cols={7} rows={5} />
           ) : lowItems.length === 0 ? (
             <div className="p-8 text-center text-green-600 font-medium">
               لا توجد أصناف ذات مخزون منخفض
@@ -411,7 +400,7 @@ export default function InventoryPage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {expiringLoading ? (
-              <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+              <TableSkeleton cols={5} rows={5} />
             ) : expiringItems.length === 0 ? (
               <div className="p-8 text-center text-green-600 font-medium">
                 لا توجد منتجات قريبة الانتهاء خلال {expiringDays} يوم

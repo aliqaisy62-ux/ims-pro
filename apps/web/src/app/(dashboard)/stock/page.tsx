@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { stockService } from '@/services/stock.service'
 import api from '@/lib/api'
+import { TableSkeleton } from '@/components/ui/TableSkeleton'
 
 interface ItemOption {
   id: string
@@ -437,7 +438,7 @@ export default function StockPage() {
         </div>
 
         {listLoading ? (
-          <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+          <TableSkeleton cols={7} />
         ) : transfers.length === 0 ? (
           <div className="p-8 text-center text-gray-500">لا توجد حركات مخزون</div>
         ) : (

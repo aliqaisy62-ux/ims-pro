@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { itemsService } from '@/services/items.service'
-import { CameraScanner } from '@/components/barcode/CameraScanner'
+import { CameraScanner, ScanResult } from '@/components/barcode/CameraScanner'
+import { TableSkeleton } from '@/components/ui/TableSkeleton'
 
 interface Item {
   id: string
@@ -26,20 +27,28 @@ function ItemsPageInner() {
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
   const [showScanner, setShowScanner] = useState(false)
   const [scanStatus, setScanStatus] = useState<'idle' | 'checking'>('idle')
   const [scanError, setScanError] = useState('')
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const hasMore = items.length < total
 
   // Auto-reopen scanner when returning from new-item form
   useEffect(() => {
     if (searchParams.get('scan') === '1') setShowScanner(true)
   }, [searchParams])
 
+  // Initial load / search-change: always replaces items
   const load = useCallback(async () => {
     setLoading(true)
+    setItems([])
+    setPage(1)
     try {
-      const data = await itemsService.getAll({ search, page, pageSize: 20 })
+      const data = await itemsService.getAll({ search, page: 1, pageSize: 20 })
       setItems(data.items)
       setTotal(data.total)
     } catch {
@@ -47,29 +56,60 @@ function ItemsPageInner() {
     } finally {
       setLoading(false)
     }
-  }, [search, page])
+  }, [search])
 
   useEffect(() => { load() }, [load])
+
+  // Append next page when sentinel scrolls into view
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore || loading || loadingMore) return
+    const el = sentinelRef.current
+    const obs = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting) return
+      obs.disconnect()
+      setLoadingMore(true)
+      try {
+        const nextPage = page + 1
+        const data = await itemsService.getAll({ search, page: nextPage, pageSize: 20 })
+        setItems(prev => [...prev, ...data.items])
+        setTotal(data.total)
+        setPage(nextPage)
+      } catch {
+        // handled by interceptor
+      } finally {
+        setLoadingMore(false)
+      }
+    }, { threshold: 0.1 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [hasMore, loading, loadingMore, page, search])
 
   async function handleScan(barcode: string) {
     setScanStatus('checking')
     setScanError('')
+    setScanResult(null)
     try {
       const item = await itemsService.getByBarcode(barcode)
-      // EXISTS → go to edit page
-      setShowScanner(false)
       setScanStatus('idle')
-      router.push(`/items/${item.id}/edit`)
+      setScanResult({ type: 'success', text: `تم العثور على: ${item.name_ar}` })
+      setTimeout(() => {
+        setShowScanner(false)
+        setScanResult(null)
+        router.push(`/items/${item.id}/edit`)
+      }, 1400)
     } catch (err: unknown) {
       setScanStatus('idle')
-      const status = (err as { response?: { status?: number } })?.response?.status
-      if (!status || status === 404) {
-        // NEW → pre-fill barcode on add page, return to scanner after
-        setShowScanner(false)
-        router.push(`/items/new?barcode=${encodeURIComponent(barcode)}&returnToScan=1`)
+      const httpStatus = (err as { response?: { status?: number } })?.response?.status
+      if (!httpStatus || httpStatus === 404) {
+        setScanResult({ type: 'info', text: 'باركود جديد — سيتم إضافة الصنف' })
+        setTimeout(() => {
+          setShowScanner(false)
+          setScanResult(null)
+          router.push(`/items/new?barcode=${encodeURIComponent(barcode)}&returnToScan=1`)
+        }, 1400)
       } else {
-        setScanError('حدث خطأ أثناء البحث — حاول مجدداً')
-        setTimeout(() => setScanError(''), 3000)
+        setScanResult({ type: 'error', text: 'حدث خطأ أثناء البحث — حاول مجدداً' })
+        setTimeout(() => setScanResult(null), 2500)
       }
     }
   }
@@ -99,16 +139,10 @@ function ItemsPageInner() {
         </div>
       </div>
 
-      {/* Scan status / error feedback */}
       {scanStatus === 'checking' && (
         <div className="mb-4 flex items-center gap-2 text-sm text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2">
           <span className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full inline-block shrink-0" />
           جار البحث عن الباركود...
-        </div>
-      )}
-      {scanError && (
-        <div className="mb-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2">
-          {scanError}
         </div>
       )}
 
@@ -117,14 +151,14 @@ function ItemsPageInner() {
           type="text"
           placeholder="بحث بالاسم أو الباركود..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          onChange={(e) => setSearch(e.target.value)}
           className="w-full max-w-sm px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">جار التحميل...</div>
+          <TableSkeleton cols={6} />
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-gray-500">لا توجد أصناف</div>
         ) : (
@@ -161,7 +195,7 @@ function ItemsPageInner() {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => router.push(`/items/${item.id}/edit`)}
-                      className="text-blue-600 hover:underline text-sm"
+                      className="text-blue-600 hover:underline text-sm px-2 py-1"
                     >
                       تعديل
                     </button>
@@ -173,18 +207,26 @@ function ItemsPageInner() {
         )}
       </div>
 
-      {total > 20 && (
-        <div className="mt-4 flex gap-2 justify-center">
-          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded disabled:opacity-50">السابق</button>
-          <span className="px-3 py-1 text-sm text-gray-600">صفحة {page} من {Math.ceil(total / 20)}</span>
-          <button disabled={page >= Math.ceil(total / 20)} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded disabled:opacity-50">التالي</button>
+      {/* Infinite scroll sentinel */}
+      {!loading && (
+        <div ref={sentinelRef} className="py-4 text-center">
+          {loadingMore && (
+            <span className="inline-flex items-center gap-2 text-sm text-gray-500">
+              <span className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full inline-block" />
+              جار تحميل المزيد...
+            </span>
+          )}
+          {!hasMore && items.length > 0 && (
+            <span className="text-xs text-gray-400">تم عرض جميع الأصناف ({total})</span>
+          )}
         </div>
       )}
 
       <CameraScanner
         open={showScanner}
         onDetect={handleScan}
-        onClose={() => { setShowScanner(false); setScanStatus('idle') }}
+        onClose={() => { setShowScanner(false); setScanStatus('idle'); setScanResult(null) }}
+        scanResult={scanResult}
       />
     </div>
   )
@@ -192,7 +234,7 @@ function ItemsPageInner() {
 
 export default function ItemsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-gray-500">جار التحميل...</div>}>
+    <Suspense fallback={<TableSkeleton cols={6} />}>
       <ItemsPageInner />
     </Suspense>
   )

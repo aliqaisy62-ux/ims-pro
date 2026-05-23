@@ -6,71 +6,68 @@ interface VirtualTableProps<T> {
   items: T[]
   rowHeight: number
   visibleRows: number
+  cols: number
+  minWidth?: number
   renderRow: (item: T, index: number) => React.ReactNode
   renderHeader: () => React.ReactNode
+  footer?: React.ReactNode
 }
 
 export function VirtualTable<T>({
   items,
   rowHeight,
   visibleRows,
+  cols,
+  minWidth,
   renderRow,
   renderHeader,
+  footer,
 }: VirtualTableProps<T>) {
   const [scrollTop, setScrollTop] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const totalHeight = items.length * rowHeight
   const containerHeight = visibleRows * rowHeight
+  const overscan = 3
 
-  // Calculate which rows are visible
-  const startIndex = Math.floor(scrollTop / rowHeight)
-  const endIndex = Math.min(startIndex + visibleRows + 2, items.length)
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan)
+  const endIndex = Math.min(
+    items.length,
+    Math.ceil((scrollTop + containerHeight) / rowHeight) + overscan,
+  )
   const visibleItems = items.slice(startIndex, endIndex)
-  const offsetY = startIndex * rowHeight
+
+  const topSpacerHeight = startIndex * rowHeight
+  const bottomSpacerHeight = (items.length - endIndex) * rowHeight
 
   const handleScroll = useCallback(() => {
-    if (containerRef.current) {
-      setScrollTop(containerRef.current.scrollTop)
-    }
+    if (containerRef.current) setScrollTop(containerRef.current.scrollTop)
   }, [])
 
   return (
-    <div style={{ direction: 'rtl' }}>
-      {/* Fixed header — rendered outside the scrollable area so it stays pinned */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-        <thead>{renderHeader()}</thead>
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{ height: containerHeight, overflowY: 'auto', overflowX: 'auto', direction: 'rtl' }}
+    >
+      <table style={{ width: '100%', minWidth, borderCollapse: 'collapse' }}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+          {renderHeader()}
+        </thead>
+        <tbody>
+          {topSpacerHeight > 0 && (
+            <tr aria-hidden="true">
+              <td colSpan={cols} style={{ height: topSpacerHeight, padding: 0, border: 'none' }} />
+            </tr>
+          )}
+          {visibleItems.map((item, i) => renderRow(item, startIndex + i))}
+          {bottomSpacerHeight > 0 && (
+            <tr aria-hidden="true">
+              <td colSpan={cols} style={{ height: bottomSpacerHeight, padding: 0, border: 'none' }} />
+            </tr>
+          )}
+        </tbody>
+        {footer && <tfoot>{footer}</tfoot>}
       </table>
-
-      {/* Scrollable body */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        style={{
-          height: containerHeight,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          position: 'relative',
-        }}
-      >
-        {/* Spacer div that represents the full virtual height */}
-        <div style={{ height: totalHeight, position: 'relative' }}>
-          {/* Rendered rows positioned at the correct vertical offset */}
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              tableLayout: 'fixed',
-              position: 'absolute',
-              top: offsetY,
-            }}
-          >
-            <tbody>
-              {visibleItems.map((item, i) => renderRow(item, startIndex + i))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }
