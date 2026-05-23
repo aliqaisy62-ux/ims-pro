@@ -1,0 +1,35 @@
+{
+  "name": "etana-desktop",
+  "version": "1.0.0",
+  "description": "Etana IMS — Windows Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.etana.desktop",
+    "productName": "Etana",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["ar", "en"],
+      "language": "1025"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
