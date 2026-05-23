@@ -19,8 +19,13 @@ jobs:
 
       - name: Build with Gradle
         run: |
-          # سيقوم هذا الأمر بالبحث عن مجلد android وتشغيل البناء منه تلقائياً
-          cd $(find . -name "gradlew" -exec dirname {} \;)
+          # البحث عن ملف gradlew في أي مكان داخل المشروع وتشغيله تلقائياً
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: gradlew not found!"
+            exit 1
+          fi
+          cd $(dirname "$GRADLEW_PATH")
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
