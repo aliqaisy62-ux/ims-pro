@@ -2,23 +2,30 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: set up JDK 17
-        uses: actions/setup-java@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Build with Gradle
         run: |
-          cd apps/web/android
+          # سيقوم هذا الأمر بالبحث عن مجلد android وتشغيل البناء منه تلقائياً
+          cd $(find . -name "gradlew" -exec dirname {} \;)
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          name: etana-debug-apk
+          path: "**/build/outputs/apk/debug/*.apk"
