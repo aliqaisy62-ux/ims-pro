@@ -113,12 +113,16 @@ export function Topbar({ sidebarWidth, onMenuToggle }: TopbarProps) {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '6px 8px',
+            padding: '0 10px',
             borderRadius: 6,
             display: 'flex',
             flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
             gap: 5,
             color: '#374151',
+            minHeight: 44,
+            minWidth: 44,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6' }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
@@ -167,11 +171,12 @@ export function Topbar({ sidebarWidth, onMenuToggle }: TopbarProps) {
             background: 'none',
             border: '1px solid #e5e7eb',
             borderRadius: 6,
-            padding: '6px 14px',
+            padding: '0 16px',
             fontSize: 13,
             color: '#6b7280',
             cursor: 'pointer',
             transition: 'background-color 0.15s, color 0.15s',
+            minHeight: 44,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#fee2e2'

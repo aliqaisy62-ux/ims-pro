@@ -58,6 +58,20 @@
   }
 }
 
+/* Barcode scanner laser sweep */
+@keyframes scan-laser {
+  0%, 100% { top: 8%; }
+  50%       { top: 84%; }
+}
+.animate-scan-laser {
+  animation: scan-laser 2s ease-in-out infinite;
+}
+
+/* WCAG 2.5.5 — 44×44px minimum touch targets for mobile accessibility */
+button {
+  min-height: 2.75rem; /* 44px */
+}
+
 /* RTL support */
 [dir="rtl"] {
   font-family: var(--font-arabic), 'Amiri', system-ui, sans-serif;

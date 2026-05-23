@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState, useCallback, ChangeEvent } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 
+export interface ScanResult {
+  type: 'success' | 'error' | 'info'
+  text: string
+}
+
 export interface CameraScannerProps {
   open: boolean
   onDetect: (barcode: string) => void
@@ -10,6 +15,7 @@ export interface CameraScannerProps {
   batchMode?: boolean
   onBatchModeChange?: (v: boolean) => void
   lastScannedLabel?: string
+  scanResult?: ScanResult | null
 }
 
 function isSecureContext(): boolean {
@@ -25,6 +31,72 @@ function isSecureContext(): boolean {
 const READER_ID = 'ims-html5qr-reader'
 const CAPTURE_ID = 'ims-html5qr-capture'
 
+// ─── Scanning overlay: corner brackets + laser line ──────────────────────────
+function ScanOverlay() {
+  const corner = 'w-5 h-5 border-2 border-green-400'
+  return (
+    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+      {/* Dark vignette to focus on scan zone */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.45) 100%)',
+        }}
+      />
+      {/* Corner brackets */}
+      <div className="relative" style={{ width: 232, height: 144 }}>
+        <span className={`absolute top-0 left-0 border-t border-l ${corner}`} />
+        <span className={`absolute top-0 right-0 border-t border-r ${corner}`} />
+        <span className={`absolute bottom-0 left-0 border-b border-l ${corner}`} />
+        <span className={`absolute bottom-0 right-0 border-b border-r ${corner}`} />
+        {/* Laser line */}
+        <div
+          className="absolute-scan-laser absolute left-1 right-1 h-px animate-scan-laser"
+          style={{
+            background: 'rgba(239,68,68,0.9)',
+            boxShadow: '0 0 6px 2px rgba(239,68,68,0.6)',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Toast banner: appears at the bottom of the camera view ──────────────────
+function ScanToast({ result }: { result: ScanResult }) {
+  const styles: Record<ScanResult['type'], { bg: string; border: string; text: string; icon: string }> = {
+    success: {
+      bg: 'bg-green-500/95',
+      border: 'border-green-400',
+      text: 'text-white',
+      icon: '✓',
+    },
+    error: {
+      bg: 'bg-red-500/95',
+      border: 'border-red-400',
+      text: 'text-white',
+      icon: '✗',
+    },
+    info: {
+      bg: 'bg-amber-500/95',
+      border: 'border-amber-400',
+      text: 'text-white',
+      icon: 'ℹ',
+    },
+  }
+  const s = styles[result.type]
+  return (
+    <div
+      className={`absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-4 py-3 border-t ${s.bg} ${s.border} ${s.text} animate-in slide-in-from-bottom-2 fade-in-0 duration-200`}
+      dir="rtl"
+    >
+      <span className="text-lg font-bold leading-none flex-shrink-0">{s.icon}</span>
+      <span className="text-sm font-medium leading-snug">{result.text}</span>
+    </div>
+  )
+}
+
 // ─── Photo-capture fallback (HTTP / non-secure context) ──────────────────────
 function PhotoCaptureMode({
   onDetect,
@@ -32,6 +104,7 @@ function PhotoCaptureMode({
   batchMode,
   onBatchModeChange,
   lastScannedLabel,
+  scanResult,
 }: Omit<CameraScannerProps, 'open'>) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<'idle' | 'decoding' | 'success' | 'error'>('idle')
@@ -41,13 +114,11 @@ function PhotoCaptureMode({
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset input so same file can be reselected
     e.target.value = ''
     setStatus('decoding')
     setErrorMsg('')
     try {
       const { Html5Qrcode } = await import('html5-qrcode')
-      // scanFile needs a mounted element with the given id
       const container = document.getElementById(CAPTURE_ID)
       if (!container) throw new Error('container missing')
       const qr = new Html5Qrcode(CAPTURE_ID, { verbose: false })
@@ -57,9 +128,8 @@ function PhotoCaptureMode({
       setStatus('success')
       onDetect(decoded)
       if (!batchMode) {
-        setTimeout(onClose, 600)
+        setTimeout(() => setStatus('idle'), 1800)
       } else {
-        // Stay open for next scan
         setTimeout(() => setStatus('idle'), 1800)
       }
     } catch {
@@ -71,15 +141,11 @@ function PhotoCaptureMode({
 
   return (
     <div className="px-4 pb-4 pt-3 flex flex-col gap-3">
-      {/* Hidden html5-qrcode mount point */}
       <div id={CAPTURE_ID} className="hidden" />
-
-      {/* Instruction */}
       <p className="text-xs text-center text-gray-500 dark:text-gray-400">
         الكاميرا المباشرة تتطلب HTTPS — انقر الزر لالتقاط صورة الباركود
       </p>
 
-      {/* Feedback */}
       <div className="h-10 flex items-center justify-center">
         {status === 'decoding' && (
           <span className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
@@ -87,22 +153,40 @@ function PhotoCaptureMode({
             جار فك تشفير الصورة...
           </span>
         )}
-        {status === 'success' && (
-          <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400 animate-pulse">
+        {status === 'success' && !scanResult && (
+          <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400">
             ✓ {lastCode}
           </span>
         )}
         {status === 'error' && (
           <span className="text-sm text-red-500">{errorMsg}</span>
         )}
-        {status === 'idle' && batchMode && lastScannedLabel && (
+        {status === 'idle' && batchMode && lastScannedLabel && !scanResult && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1 text-xs text-green-700 dark:text-green-400 text-center w-full">
             أُضيف: <strong>{lastScannedLabel}</strong>
           </div>
         )}
       </div>
 
-      {/* Camera capture button */}
+      {/* Scan result toast for photo mode */}
+      {scanResult && (
+        <div
+          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ${
+            scanResult.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+              : scanResult.type === 'error'
+              ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
+              : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+          }`}
+          dir="rtl"
+        >
+          <span className="text-base leading-none">
+            {scanResult.type === 'success' ? '✓' : scanResult.type === 'error' ? '✗' : 'ℹ'}
+          </span>
+          <span>{scanResult.text}</span>
+        </div>
+      )}
+
       <input
         ref={fileRef}
         type="file"
@@ -125,7 +209,6 @@ function PhotoCaptureMode({
         التقاط صورة الباركود
       </button>
 
-      {/* Batch toggle */}
       {onBatchModeChange && (
         <button
           type="button"
@@ -167,10 +250,10 @@ export function CameraScanner({
   batchMode = false,
   onBatchModeChange,
   lastScannedLabel,
+  scanResult,
 }: CameraScannerProps) {
   const [status, setStatus] = useState<'idle' | 'starting' | 'active' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const [flashCode, setFlashCode] = useState('')
   const scannerRef = useRef<import('html5-qrcode').Html5Qrcode | null>(null)
   const lastScanRef = useRef<string>('')
   const mountedRef = useRef(false)
@@ -202,19 +285,14 @@ export function CameraScanner({
       scannerRef.current = qr
       await qr.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 260, height: 160 }, aspectRatio: 1.6, formatsToSupport: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13] },
+        { fps: 10, qrbox: { width: 232, height: 144 }, aspectRatio: 1.6, formatsToSupport: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13] },
         (decodedText) => {
           if (!mountedRef.current) return
           if (decodedText === lastScanRef.current) return
           lastScanRef.current = decodedText
-          setTimeout(() => { lastScanRef.current = '' }, 1500)
-          setFlashCode(decodedText)
-          setTimeout(() => setFlashCode(''), 1500)
-          if (!batchRef.current) {
-            stopScanner().then(() => { if (mountedRef.current) onDetect(decodedText) })
-          } else {
-            onDetect(decodedText)
-          }
+          setTimeout(() => { lastScanRef.current = '' }, 2000)
+          // Notify parent immediately — parent controls close timing
+          if (mountedRef.current) onDetect(decodedText)
         },
         () => {}
       )
@@ -242,7 +320,6 @@ export function CameraScanner({
         mountedRef.current = false
         stopScanner()
         setStatus('idle')
-        setFlashCode('')
         lastScanRef.current = ''
       }
     }
@@ -281,7 +358,7 @@ export function CameraScanner({
             </Dialog.Close>
           </div>
 
-          {/* Body: photo-capture on HTTP, live stream on HTTPS */}
+          {/* Body */}
           {!secure ? (
             <PhotoCaptureMode
               onDetect={onDetect}
@@ -289,6 +366,7 @@ export function CameraScanner({
               batchMode={batchMode}
               onBatchModeChange={onBatchModeChange}
               lastScannedLabel={lastScannedLabel}
+              scanResult={scanResult}
             />
           ) : (
             <>
@@ -316,25 +394,26 @@ export function CameraScanner({
                         جار تشغيل الكاميرا...
                       </div>
                     )}
-                    <div
-                      id={READER_ID}
-                      className="overflow-hidden rounded-xl bg-black"
-                      style={{ minHeight: status === 'starting' ? 0 : 220 }}
-                    />
-                    <div className="h-8 flex items-center justify-center mt-2">
-                      {flashCode ? (
-                        <span className="font-mono text-sm font-bold text-green-600 dark:text-green-400 animate-pulse">
-                          ✓ {flashCode}
-                        </span>
-                      ) : status === 'active' ? (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">وجّه الكاميرا نحو الباركود</span>
-                      ) : null}
+
+                    {/* Camera + overlay wrapper */}
+                    <div className="relative overflow-hidden rounded-xl bg-black" style={{ minHeight: status === 'starting' ? 0 : 220 }}>
+                      <div id={READER_ID} className="w-full" />
+                      {status === 'active' && <ScanOverlay />}
+                      {/* Scan result toast overlaid on camera */}
+                      {scanResult && <ScanToast result={scanResult} />}
                     </div>
-                    {batchMode && lastScannedLabel && (
-                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1.5 text-center text-xs text-green-700 dark:text-green-400 mb-1">
-                        أُضيف: <strong>{lastScannedLabel}</strong>
-                      </div>
-                    )}
+
+                    {/* Hint or batch label below camera */}
+                    <div className="h-7 flex items-center justify-center mt-1.5">
+                      {!scanResult && status === 'active' && !batchMode && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">وجّه الكاميرا نحو الباركود</span>
+                      )}
+                      {!scanResult && batchMode && lastScannedLabel && (
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1 text-xs text-green-700 dark:text-green-400 text-center w-full">
+                          أُضيف: <strong>{lastScannedLabel}</strong>
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
               </div>

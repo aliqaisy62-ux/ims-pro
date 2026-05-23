@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
+    "dev:host": "next dev -p 3001 -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p ${PORT:-3001}",
     "lint": "next lint",
@@ -14,6 +15,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
+    "@capacitor/haptics": "^8.0.2",
     "@hookform/resolvers": "^3.6.0",
     "@ims-pro/i18n": "*",
     "@ims-pro/types": "*",

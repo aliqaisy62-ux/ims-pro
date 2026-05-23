@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { triggerHaptic } from '@/lib/haptics'
 
 type Role = 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER' | 'ACCOUNTANT' | 'STAFF'
 
@@ -34,19 +35,24 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  isMobile?: boolean
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, isMobile, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
 
   const userRole = user?.role as Role | undefined
+  const filteredItems = navItems.filter((item) => userRole && item.roles.includes(userRole))
 
-  const filteredItems = navItems.filter(
-    (item) => userRole && item.roles.includes(userRole)
-  )
+  const isVisible = isMobile ? mobileOpen : true
+  const sidebarWidth = isMobile ? 260 : collapsed ? 64 : 256
 
-  const sidebarWidth = collapsed ? 64 : 256
+  const translateX = isMobile
+    ? mobileOpen ? '0%' : '100%'
+    : '0%'
 
   return (
     <aside
@@ -60,10 +66,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         color: '#f1f5f9',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'width 0.25s ease',
+        transition: 'width 0.25s ease, transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+        transform: `translateX(${translateX})`,
         zIndex: 50,
         overflowX: 'hidden',
-        boxShadow: '-2px 0 8px rgba(0,0,0,0.15)',
+        boxShadow: isVisible ? '-2px 0 8px rgba(0,0,0,0.15)' : 'none',
       }}
       dir="rtl"
     >
@@ -73,8 +80,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           height: 64,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          padding: collapsed ? '0' : '0 20px',
+          justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+          padding: collapsed && !isMobile ? '0' : '0 20px',
           borderBottom: '1px solid #334155',
           flexShrink: 0,
           overflow: 'hidden',
@@ -82,19 +89,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         }}
       >
         <span style={{ fontSize: 22, fontWeight: 700, color: '#38bdf8', letterSpacing: 1 }}>
-          {collapsed ? 'IMS' : 'IMS-Pro'}
+          {collapsed && !isMobile ? 'IMS' : 'IMS-Pro'}
         </span>
       </div>
 
       {/* Navigation */}
-      <nav
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '8px 0',
-        }}
-      >
+      <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
         {filteredItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -104,13 +104,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              title={collapsed ? item.labelAr : undefined}
+              title={collapsed && !isMobile ? item.labelAr : undefined}
+              onClick={() => {
+                triggerHaptic()
+                if (onMobileClose) onMobileClose()
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: collapsed ? '12px 0' : '12px 20px',
-                justifyContent: collapsed ? 'center' : 'flex-start',
+                padding: collapsed && !isMobile ? '12px 0' : '12px 20px',
+                justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
                 textDecoration: 'none',
                 color: isActive ? '#38bdf8' : '#94a3b8',
                 backgroundColor: isActive ? 'rgba(56,189,248,0.12)' : 'transparent',
@@ -133,7 +137,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               }}
             >
               <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
-              {!collapsed && (
+              {!(collapsed && !isMobile) && (
                 <span style={{ fontSize: 14, fontWeight: isActive ? 600 : 400 }}>
                   {item.labelAr}
                 </span>
@@ -143,33 +147,34 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         })}
       </nav>
 
-      {/* Collapse Toggle */}
-      <div style={{ borderTop: '1px solid #334155', flexShrink: 0 }}>
-        <button
-          onClick={onToggle}
-          title={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
-          style={{
-            width: '100%',
-            height: 48,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            color: '#64748b',
-            cursor: 'pointer',
-            fontSize: 18,
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#f1f5f9' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b' }}
-        >
-          {/* Arrow: points left (←) when expanded to collapse, right (→) when collapsed to expand */}
-          <span style={{ display: 'inline-block', transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s' }}>
-            &#8594;
-          </span>
-        </button>
-      </div>
+      {/* Collapse Toggle — desktop only */}
+      {!isMobile && (
+        <div style={{ borderTop: '1px solid #334155', flexShrink: 0 }}>
+          <button
+            onClick={onToggle}
+            title={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
+            style={{
+              width: '100%',
+              height: 48,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              color: '#64748b',
+              cursor: 'pointer',
+              fontSize: 18,
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#f1f5f9' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#64748b' }}
+          >
+            <span style={{ display: 'inline-block', transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s' }}>
+              &#8594;
+            </span>
+          </button>
+        </div>
+      )}
     </aside>
   )
 }
