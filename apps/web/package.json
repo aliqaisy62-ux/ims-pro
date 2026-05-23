@@ -6,9 +6,14 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p ${PORT:-3001}",
-    "lint": "next lint"
+    "lint": "next lint",
+    "app:sync": "npx cap sync android",
+    "app:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@hookform/resolvers": "^3.6.0",
     "@ims-pro/i18n": "*",
     "@ims-pro/types": "*",
