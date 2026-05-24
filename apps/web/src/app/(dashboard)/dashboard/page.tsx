@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { cashStatementService } from '@/services/cashStatement.service'
 import { stockService } from '@/services/stock.service'
+import { FinancialSummary } from '@/components/dashboard/FinancialSummary'
 
 interface DaySummary {
   cashSalesIQD: number
@@ -96,6 +97,9 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Today's financial summary */}
+      <FinancialSummary />
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
@@ -145,6 +149,7 @@ export default function DashboardPage() {
             { href: '/customers/new', label: 'عميل جديد',              icon: '👥' },
             { href: '/reports',       label: 'التقارير',                icon: '📈' },
             { href: '/cash-statement', label: 'كشف الصندوق',           icon: '💰' },
+            { href: '/sales',         label: 'إرجاع مبيعات',          icon: '↩️' },
           ].map((link) => (
             <a
               key={link.href}

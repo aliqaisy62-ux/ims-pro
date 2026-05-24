@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import {
+  getTodaySummary,
   getSalesReport,
   getPurchasesReport,
   getProfitReport,
@@ -7,6 +8,16 @@ import {
   getCustomerStatement,
   getSupplierStatement,
 } from '../services/reports.service'
+
+export async function todaySummaryHandler(_req: Request, res: Response) {
+  try {
+    const data = await getTodaySummary()
+    res.json({ success: true, data })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to get today summary'
+    res.status(500).json({ success: false, error: msg })
+  }
+}
 
 export async function salesReport(req: Request, res: Response) {
   try {

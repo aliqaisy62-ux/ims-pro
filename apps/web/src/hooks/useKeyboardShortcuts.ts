@@ -22,15 +22,16 @@ export function useKeyboardShortcuts() {
           router.push('/sales/new')
           break
         case 'F3':
+          // Focus the barcode input on the current POS page
           e.preventDefault()
-          router.push('/purchases/new')
+          document.dispatchEvent(new CustomEvent('ims-focus-barcode'))
           break
         case 'F4':
+          // Confirm / submit the active invoice
           e.preventDefault()
-          router.push('/vouchers/new')
+          document.dispatchEvent(new CustomEvent('ims-confirm-invoice'))
           break
         case 'Escape':
-          // Close any open modals — dispatch a custom event
           document.dispatchEvent(new CustomEvent('ims-close-modal'))
           break
       }

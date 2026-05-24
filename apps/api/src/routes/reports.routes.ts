@@ -8,6 +8,7 @@ router.use(verifyToken)
 
 const reportRoles = ['ADMIN', 'MANAGER', 'ACCOUNTANT', 'VIEWER'] as const
 
+router.get('/today-summary',              requireRole('ADMIN', 'MANAGER', 'CASHIER', 'ACCOUNTANT', 'STAFF'), ctrl.todaySummaryHandler)
 router.get('/sales',                      requireRole(...reportRoles), ctrl.salesReport)
 router.get('/purchases',                  requireRole(...reportRoles), ctrl.purchasesReport)
 router.get('/profit',                     requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), ctrl.profitReport)
