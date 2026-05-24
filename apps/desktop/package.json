@@ -2,6 +2,7 @@
   "name": "@ims-pro/desktop",
   "version": "1.0.0",
   "description": "IMS-Pro نظام إدارة المخزون — تطبيق ويندوز",
+  "author": "Etana",
   "main": "main.js",
   "scripts": {
     "dev":           "electron .",
@@ -10,10 +11,11 @@
     "build:dir":     "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId":       "com.etana.imspro",
-    "productName": "IMS-Pro إيتانا",
-    "copyright":   "Copyright © 2025 Etana",
-    "asar":        true,
+    "appId":            "com.etana.imspro",
+    "productName":      "IMS-Pro إيتانا",
+    "copyright":        "Copyright © 2025 Etana",
+    "electronVersion":  "31.7.7",
+    "asar":             true,
     "directories": {
       "output":          "dist",
       "buildResources":  "assets"
@@ -44,19 +46,14 @@
         { "target": "nsis",     "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon":                    "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
-      "oneClick":                       false,
-      "perMachine":                     false,
+      "oneClick":                          false,
+      "perMachine":                        false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut":          true,
-      "createStartMenuShortcut":        true,
-      "installerLanguages":             ["Arabic", "English"],
-      "language":                       "1025",
-      "installerIcon":                  "assets/icon.ico",
-      "uninstallerIcon":                "assets/icon.ico"
+      "createDesktopShortcut":             true,
+      "createStartMenuShortcut":           true
     }
   },
   "devDependencies": {
