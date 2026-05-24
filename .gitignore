@@ -40,6 +40,15 @@ Thumbs.db
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 
+# SQLite database (portable — not committed, lives in data/)
+*.db
+*.db-shm
+*.db-wal
+data/cashier.db
+data/logs/
+data/backups/
+data/receipts/
+
 # Backups
 backups/
 *.sql.gz
