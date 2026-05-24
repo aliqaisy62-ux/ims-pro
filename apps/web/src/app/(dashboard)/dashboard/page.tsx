@@ -62,6 +62,7 @@ function fmt(n: number, decimals = 0): string {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const isCashier = user?.role === 'CASHIER'
   const [summary, setSummary] = useState<DaySummary | null>(null)
   const [lowStockCount, setLowStockCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -97,8 +98,8 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Today's financial summary */}
-      <FinancialSummary />
+      {/* Today's financial summary — hidden from CASHIER */}
+      {!isCashier && <FinancialSummary />}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -140,17 +141,19 @@ export default function DashboardPage() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
         <h2 className="text-base font-semibold text-gray-800 dark:text-white mb-4">روابط سريعة</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {[
-            { href: '/sales/new',     label: 'فاتورة مبيعات جديدة',     icon: '🧾' },
-            { href: '/purchases/new', label: 'فاتورة مشتريات جديدة',    icon: '🛒' },
-            { href: '/vouchers/new',  label: 'سند قبض / صرف',          icon: '📋' },
-            { href: '/expenses/new',  label: 'تسجيل مصروف',            icon: '💸' },
-            { href: '/items/new',     label: 'إضافة منتج',              icon: '📦' },
-            { href: '/customers/new', label: 'عميل جديد',              icon: '👥' },
-            { href: '/reports',       label: 'التقارير',                icon: '📈' },
-            { href: '/cash-statement', label: 'كشف الصندوق',           icon: '💰' },
-            { href: '/sales',         label: 'إرجاع مبيعات',          icon: '↩️' },
-          ].map((link) => (
+          {([
+            { href: '/sales/new',      label: 'فاتورة مبيعات جديدة',  icon: '🧾', roles: null },
+            { href: '/purchases/new',  label: 'فاتورة مشتريات جديدة', icon: '🛒', roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+            { href: '/vouchers/new',   label: 'سند قبض / صرف',       icon: '📋', roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+            { href: '/expenses/new',   label: 'تسجيل مصروف',         icon: '💸', roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+            { href: '/items/new',      label: 'إضافة منتج',           icon: '📦', roles: ['ADMIN', 'MANAGER', 'STAFF'] },
+            { href: '/customers/new',  label: 'عميل جديد',           icon: '👥', roles: null },
+            { href: '/reports',        label: 'التقارير',             icon: '📈', roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT', 'VIEWER'] },
+            { href: '/cash-statement', label: 'كشف الصندوق',         icon: '💰', roles: ['ADMIN', 'MANAGER', 'ACCOUNTANT'] },
+            { href: '/sales',          label: 'إرجاع مبيعات',        icon: '↩', roles: null },
+          ] as { href: string; label: string; icon: string; roles: string[] | null }[])
+            .filter(link => !link.roles || link.roles.includes(user?.role ?? ''))
+            .map((link) => (
             <a
               key={link.href}
               href={link.href}
