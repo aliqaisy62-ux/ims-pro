@@ -14,7 +14,10 @@
     "db:generate": "npx prisma generate --schema=packages/db/prisma/schema.prisma",
     "db:migrate": "npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma",
     "db:seed": "npx tsx packages/db/seed.ts",
-    "setup": "npm install && npm run db:generate && npm run db:migrate && npm run db:seed"
+    "setup": "npm install && npm run db:generate && npm run db:migrate && npm run db:seed",
+    "electron:dev": "cd apps/desktop && npm run dev",
+    "electron:install": "cd apps/desktop && npm install",
+    "electron:build": "powershell -ExecutionPolicy Bypass -File apps/desktop/build.ps1"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
