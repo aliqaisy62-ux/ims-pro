@@ -271,6 +271,80 @@ export async function cancelInvoice(invoiceId: string, userId: string) {
   return getSalesInvoiceById(invoiceId)
 }
 
+export async function partialReturnInvoice(
+  invoiceId: string,
+  returnItems: { itemId: string; quantity: number }[],
+  userId: string
+) {
+  const invoice = await prisma.salesInvoice.findFirst({
+    where: { id: invoiceId, isActive: true },
+    include: { items: true },
+  })
+
+  if (!invoice) throw new Error('INVOICE_NOT_FOUND')
+  if (invoice.status !== 'CONFIRMED') {
+    const err = new Error('ONLY_CONFIRMED_CAN_BE_RETURNED')
+    ;(err as Error & { statusCode: number }).statusCode = 400
+    throw err
+  }
+
+  for (const ri of returnItems) {
+    const invLine = invoice.items.find((l) => l.itemId === ri.itemId)
+    if (!invLine) throw new Error(`ITEM_NOT_IN_INVOICE:${ri.itemId}`)
+    if (ri.quantity <= 0) throw new Error(`INVALID_QUANTITY:${ri.itemId}`)
+    if (ri.quantity > Number(invLine.quantity)) throw new Error(`RETURN_QTY_EXCEEDS_SOLD:${ri.itemId}`)
+  }
+
+  let returnTotal = new Decimal(0)
+  for (const ri of returnItems) {
+    const invLine = invoice.items.find((l) => l.itemId === ri.itemId)!
+    returnTotal = returnTotal.plus(new Decimal(ri.quantity).mul(new Decimal(invLine.unitPrice.toString())))
+  }
+
+  const isFullReturn =
+    returnItems.length === invoice.items.length &&
+    returnItems.every((ri) => {
+      const invLine = invoice.items.find((l) => l.itemId === ri.itemId)!
+      return ri.quantity >= Number(invLine.quantity)
+    })
+
+  await prisma.$transaction(
+    async (tx) => {
+      for (const ri of returnItems) {
+        await tx.item.update({
+          where: { id: ri.itemId },
+          data: { stockQty: { increment: ri.quantity } },
+        })
+        await tx.stockTransfer.create({
+          data: {
+            itemId: ri.itemId,
+            type: 'IN',
+            reason: 'RETURN',
+            quantity: new Decimal(ri.quantity),
+            notes: `إرجاع${isFullReturn ? '' : ' جزئي'}: ${invoice.invoiceNumber}`,
+            createdById: userId,
+          },
+        })
+      }
+
+      if (invoice.type === 'CREDIT' && invoice.customerId) {
+        await tx.customer.update({
+          where: { id: invoice.customerId },
+          data: { balance: { decrement: returnTotal.toNumber() } },
+        })
+      }
+
+      await tx.salesInvoice.update({
+        where: { id: invoiceId },
+        data: { status: isFullReturn ? 'RETURNED' : 'CONFIRMED' },
+      })
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
+
+  return getSalesInvoiceById(invoiceId)
+}
+
 export async function returnInvoice(invoiceId: string, userId: string) {
   const invoice = await prisma.salesInvoice.findFirst({
     where: { id: invoiceId, isActive: true },

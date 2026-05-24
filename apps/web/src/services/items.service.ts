@@ -21,4 +21,19 @@ export const itemsService = {
 
   delete: (id: string) =>
     api.delete(`/api/items/${id}`).then((r) => r.data),
+
+  validateImport: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/api/items/validate-import', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
+  importItems: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/api/items/import', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
 }

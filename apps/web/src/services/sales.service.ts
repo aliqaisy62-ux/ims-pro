@@ -13,4 +13,6 @@ export const salesService = {
     api.post(`/api/sales/${id}/cancel`).then((r) => r.data),
   returnInvoice: (id: string) =>
     api.post(`/api/sales/${id}/return`).then((r) => r.data),
+  partialReturn: (id: string, items: { itemId: string; quantity: number }[]) =>
+    api.post(`/api/sales/${id}/partial-return`, { items }).then((r) => r.data),
 }

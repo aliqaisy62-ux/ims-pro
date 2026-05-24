@@ -8,6 +8,7 @@ import {
   confirmInvoiceHandler,
   cancelInvoiceHandler,
   returnInvoiceHandler,
+  partialReturnHandler,
 } from '../controllers/sales.controller'
 
 const router = Router()
@@ -19,5 +20,6 @@ router.get('/:id', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), getInvoi
 router.post('/:id/confirm', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), confirmInvoiceHandler)
 router.post('/:id/cancel', requireRole('ADMIN', 'MANAGER'), cancelInvoiceHandler)
 router.post('/:id/return', requireRole('ADMIN', 'MANAGER'), returnInvoiceHandler)
+router.post('/:id/partial-return', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), partialReturnHandler)
 
 export default router

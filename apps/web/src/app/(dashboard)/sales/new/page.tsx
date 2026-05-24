@@ -82,6 +82,7 @@ function calcLineTotal(qty: number, price: number, discount: number): number {
 export default function NewSalesInvoicePage() {
   const router = useRouter()
   const barcodeRef = useRef<HTMLInputElement>(null)
+  const confirmClickRef = useRef<() => void>(() => {})
   const { playBeep, playBuzz } = useSoundFeedback()
 
   const [lines, setLines] = useState<InvoiceLine[]>([])
@@ -167,6 +168,17 @@ export default function NewSalesInvoicePage() {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    function onFocusBarcode() { barcodeRef.current?.focus() }
+    function onConfirmInvoice() { confirmClickRef.current() }
+    document.addEventListener('ims-focus-barcode', onFocusBarcode)
+    document.addEventListener('ims-confirm-invoice', onConfirmInvoice)
+    return () => {
+      document.removeEventListener('ims-focus-barcode', onFocusBarcode)
+      document.removeEventListener('ims-confirm-invoice', onConfirmInvoice)
+    }
   }, [])
 
   // Core: add an item to cart (used by barcode, camera, search, quick-add)
@@ -347,6 +359,7 @@ export default function NewSalesInvoicePage() {
     } finally { setLoading(false) }
   }
 
+  confirmClickRef.current = handleConfirmClick
   const change = paidAmount - total
 
   const scanBorderClass =

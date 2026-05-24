@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import * as xlsx from 'xlsx'
 import {
   getItems,
   getItemById,
@@ -7,6 +8,8 @@ import {
   updateItem,
   softDeleteItem,
   getCategories,
+  importItems,
+  validateImportRows,
 } from '../services/item.service'
 
 export async function listItems(req: Request, res: Response) {
@@ -82,5 +85,53 @@ export async function listCategories(_req: Request, res: Response) {
     res.json({ success: true, data: categories })
   } catch {
     res.status(500).json({ success: false, error: 'Failed to fetch categories' })
+  }
+}
+
+export async function validateImportHandler(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'لم يتم رفع ملف' })
+    }
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    const rows = xlsx.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+
+    if (rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'الملف فارغ أو لا يحتوي على بيانات' })
+    }
+    if (rows.length > 1000) {
+      return res.status(400).json({ success: false, error: 'الحد الأقصى للاستيراد 1000 صف في المرة الواحدة' })
+    }
+
+    const result = await validateImportRows(rows)
+    res.json({ success: true, data: result })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'فشل التحقق من الملف'
+    res.status(500).json({ success: false, error: msg })
+  }
+}
+
+export async function importItemsHandler(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'لم يتم رفع ملف' })
+    }
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    const rows = xlsx.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+
+    if (rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'الملف فارغ أو لا يحتوي على بيانات' })
+    }
+    if (rows.length > 1000) {
+      return res.status(400).json({ success: false, error: 'الحد الأقصى للاستيراد 1000 صف في المرة الواحدة' })
+    }
+
+    const result = await importItems(rows)
+    res.json({ success: true, data: result })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'فشل الاستيراد'
+    res.status(500).json({ success: false, error: msg })
   }
 }

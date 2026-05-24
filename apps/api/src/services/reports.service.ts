@@ -16,6 +16,69 @@ function endOfDay(dateStr: string): Date {
   return d
 }
 
+// ─── Today Summary ─────────────────────────────────────────────────────────────
+
+export async function getTodaySummary() {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+  const todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+
+  const [confirmedInvoices, returnedInvoices, expenses] = await Promise.all([
+    prisma.salesInvoice.findMany({
+      where: {
+        isActive: true,
+        status: 'CONFIRMED',
+        createdAt: { gte: todayStart, lte: todayEnd },
+      },
+      select: { total: true, currency: true, exchangeRate: true, type: true },
+    }),
+    prisma.salesInvoice.findMany({
+      where: {
+        isActive: true,
+        status: 'RETURNED',
+        updatedAt: { gte: todayStart, lte: todayEnd },
+      },
+      select: { total: true, currency: true, exchangeRate: true },
+    }),
+    prisma.expense.findMany({
+      where: {
+        isActive: true,
+        date: { gte: todayStart, lte: todayEnd },
+      },
+      select: { amount: true, currency: true, exchangeRate: true },
+    }),
+  ])
+
+  function toIQD(amount: number, currency: string, rate: number): number {
+    return currency === 'USD' ? amount * rate : amount
+  }
+
+  const salesTotalIQD = confirmedInvoices.reduce(
+    (s, inv) => s + toIQD(Number(inv.total), inv.currency, Number(inv.exchangeRate)),
+    0
+  )
+  const returnsTotalIQD = returnedInvoices.reduce(
+    (s, inv) => s + toIQD(Number(inv.total), inv.currency, Number(inv.exchangeRate)),
+    0
+  )
+  const expensesTotalIQD = expenses.reduce(
+    (s, e) => s + toIQD(Number(e.amount), e.currency, Number(e.exchangeRate)),
+    0
+  )
+  const netSalesIQD = salesTotalIQD - returnsTotalIQD
+  const netProfitIQD = netSalesIQD - expensesTotalIQD
+
+  return {
+    salesCount: confirmedInvoices.length,
+    salesTotalIQD,
+    returnsCount: returnedInvoices.length,
+    returnsTotalIQD,
+    netSalesIQD,
+    expensesTotalIQD,
+    netProfitIQD,
+  }
+}
+
 // ─── Sales Report ──────────────────────────────────────────────────────────────
 
 export async function getSalesReport(params: {

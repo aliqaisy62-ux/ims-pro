@@ -1,6 +1,8 @@
 import api from '@/lib/api'
 
 export const reportsService = {
+  getTodaySummary: () =>
+    api.get('/api/reports/today-summary').then((r) => r.data),
   getSales: (params: Record<string, string | undefined>) =>
     api.get('/api/reports/sales', { params }).then((r) => r.data),
   getPurchases: (params: Record<string, string | undefined>) =>

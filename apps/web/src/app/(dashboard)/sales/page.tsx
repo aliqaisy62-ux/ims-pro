@@ -146,6 +146,7 @@ export default function SalesPage() {
                 <th className="px-4 py-3 text-right font-medium">الحالة</th>
                 <th className="px-4 py-3 text-right font-medium">طريقة الدفع</th>
                 <th className="px-4 py-3 text-right font-medium">التاريخ</th>
+                <th className="px-4 py-3 text-right font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -182,6 +183,16 @@ export default function SalesPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {new Date(inv.createdAt).toLocaleDateString('ar-IQ')}
+                  </td>
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    {inv.status === 'CONFIRMED' && (
+                      <button
+                        onClick={() => router.push(`/sales/${inv.id}/return`)}
+                        className="text-orange-600 hover:underline text-xs px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                      >
+                        إرجاع
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
