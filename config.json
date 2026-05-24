@@ -1,0 +1,31 @@
+{
+  "_comment": "IMS-Pro Portable Configuration — edit values here, do NOT edit .env directly",
+  "app": {
+    "name_ar": "إيتانا — نظام إدارة المخزون",
+    "name_en": "IMS-Pro Inventory Management System",
+    "version": "1.0.0"
+  },
+  "server": {
+    "api_port": 4001,
+    "web_port": 3001
+  },
+  "database": {
+    "type": "sqlite",
+    "file": "./data/cashier.db",
+    "_note": "Path is relative to project root. Change only if you want the DB elsewhere."
+  },
+  "exchange_rate": {
+    "default_iqd_per_usd": 1480
+  },
+  "paths": {
+    "data":     "./data",
+    "logs":     "./data/logs",
+    "backups":  "./data/backups",
+    "receipts": "./data/receipts",
+    "fonts":    "./apps/web/public/fonts"
+  },
+  "backup": {
+    "enabled": true,
+    "keep_days": 30
+  }
+}

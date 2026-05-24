@@ -77,11 +77,20 @@ async function startServers() {
   const apiRunning = await isPortListening(API_PORT)
   const webRunning = await isPortListening(WEB_PORT)
 
+  // Resolve SQLite DB path — absolute so Prisma doesn't depend on CWD
+  const dbFile = IS_DEV
+    ? path.resolve(__dirname, '..', '..', 'data', 'cashier.db')
+    : path.join(app.getPath('userData'), 'cashier.db')
+  // Single "file:" prefix + forward slashes — correct Prisma SQLite URI on Windows
+  const dbUrl = 'file:' + dbFile.replace(/\\/g, '/')
+
   if (IS_DEV) {
     const root = path.resolve(__dirname, '..', '..')
 
     if (!apiRunning) {
-      spawnServer('npm', ['run', 'dev'], path.join(root, 'apps', 'api'))
+      spawnServer('npm', ['run', 'dev'], path.join(root, 'apps', 'api'), {
+        DATABASE_URL: dbUrl,
+      })
     } else {
       console.log(`[desktop] API already on :${API_PORT}`)
     }
@@ -121,6 +130,7 @@ async function startServers() {
     if (!apiRunning) {
       spawnServer('node', ['dist/index.js'], apiDir, {
         ...apiEnv,
+        DATABASE_URL: dbUrl,
         PORT: String(API_PORT),
         NODE_ENV: 'production',
       })

@@ -1,34 +1,28 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-// Font cached in memory after first load to avoid re-fetching
+// Font cached in memory after first load — served from local /public/fonts/ only (no CDN)
 let _fontCache: string | false | undefined = undefined
 
 async function fetchArabicFont(): Promise<string | null> {
   if (_fontCache !== undefined) return _fontCache || null
-  const sources = [
-    '/fonts/Amiri-Regular.ttf',
-    'https://cdn.jsdelivr.net/gh/alif-type/amiri@1.100/Amiri-Regular.ttf',
-  ]
-  for (const url of sources) {
-    const controller = new AbortController()
-    const tid = setTimeout(() => controller.abort(), 9000)
-    try {
-      const res = await fetch(url, { signal: controller.signal })
-      clearTimeout(tid)
-      if (!res.ok) continue
-      const buf = await res.arrayBuffer()
-      const bytes = new Uint8Array(buf)
-      let binary = ''
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-      _fontCache = btoa(binary)
-      return _fontCache
-    } catch {
-      clearTimeout(tid)
-    }
+  const controller = new AbortController()
+  const tid = setTimeout(() => controller.abort(), 5000)
+  try {
+    const res = await fetch('/fonts/Amiri-Regular.ttf', { signal: controller.signal })
+    clearTimeout(tid)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+    _fontCache = btoa(binary)
+    return _fontCache
+  } catch {
+    clearTimeout(tid)
+    _fontCache = false
+    return null
   }
-  _fontCache = false
-  return null
 }
 
 async function createDoc(): Promise<{ doc: jsPDF; font: string }> {

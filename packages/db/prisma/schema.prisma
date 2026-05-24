@@ -3,85 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  CASHIER
-  VIEWER
-  ACCOUNTANT
-  STAFF
-}
-
-enum Language {
-  ar
-  en
-}
-
-enum PriceType {
-  RETAIL
-  WHOLESALE
-  SPECIAL
-  DOLLAR
-  DINAR
-}
-
-enum PaymentType {
-  CASH
-  CREDIT
-}
-
-enum Currency {
-  USD
-  IQD
-}
-
-enum InvoiceStatus {
-  DRAFT
-  CONFIRMED
-  CANCELLED
-  RETURNED
-}
-
-enum CustomerType {
-  RETAIL
-  WHOLESALE
-}
-
-enum VoucherType {
-  DISBURSEMENT
-  RECEIPT
-}
-
-enum EntityType {
-  CUSTOMER
-  SUPPLIER
-  OTHER
-}
-
-enum TransferType {
-  IN
-  OUT
-}
-
-enum TransferReason {
-  DAMAGE
-  ADJUSTMENT
-  TRANSFER
-  RETURN
-  EXPIRED
-}
+// SQLite note: enums are stored as TEXT with CHECK constraints.
+// Decimal fields are stored as REAL (sufficient for local POS use).
 
 model User {
   id           String   @id @default(cuid())
   name         String
   username     String   @unique
   passwordHash String
-  role         UserRole @default(CASHIER)
-  language     Language @default(ar)
+  role         String   @default("CASHIER")
+  language     String   @default("ar")
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -112,8 +47,8 @@ model Supplier {
   name      String
   phone     String?
   address   String?
-  balance   Decimal  @default(0) @db.Decimal(15, 3)
-  currency  Currency @default(IQD)
+  balance   Decimal  @default(0)
+  currency  String   @default("IQD")
   notes     String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -133,14 +68,14 @@ model Item {
   name_en        String
   unit           String    @default("piece")
   categoryId     String?
-  costPrice      Decimal   @default(0) @db.Decimal(15, 3)
-  retailPrice    Decimal   @default(0) @db.Decimal(15, 3)
-  wholesalePrice Decimal   @default(0) @db.Decimal(15, 3)
-  specialPrice   Decimal   @default(0) @db.Decimal(15, 3)
-  dollarPrice    Decimal   @default(0) @db.Decimal(15, 3)
-  dinarPrice     Decimal   @default(0) @db.Decimal(15, 3)
-  stockQty       Decimal   @default(0) @db.Decimal(15, 3)
-  minimumStock   Decimal   @default(0) @db.Decimal(15, 3)
+  costPrice      Decimal   @default(0)
+  retailPrice    Decimal   @default(0)
+  wholesalePrice Decimal   @default(0)
+  specialPrice   Decimal   @default(0)
+  dollarPrice    Decimal   @default(0)
+  dinarPrice     Decimal   @default(0)
+  stockQty       Decimal   @default(0)
+  minimumStock   Decimal   @default(0)
   expiryDate     DateTime?
   supplierId     String?
   isActive       Boolean   @default(true)
@@ -162,18 +97,18 @@ model Item {
 }
 
 model Customer {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   phone       String?
   address     String?
-  type        CustomerType @default(RETAIL)
-  creditLimit Decimal      @default(0) @db.Decimal(15, 3)
-  balance     Decimal      @default(0) @db.Decimal(15, 3)
-  currency    Currency     @default(IQD)
+  type        String   @default("RETAIL")
+  creditLimit Decimal  @default(0)
+  balance     Decimal  @default(0)
+  currency    String   @default("IQD")
   notes       String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   salesInvoices SalesInvoice[]
 
@@ -184,25 +119,25 @@ model Customer {
 }
 
 model SalesInvoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
   customerId    String?
-  type          PaymentType   @default(CASH)
-  priceType     PriceType     @default(RETAIL)
-  currency      Currency      @default(IQD)
-  exchangeRate  Decimal       @default(1480) @db.Decimal(15, 3)
-  subtotal      Decimal       @default(0) @db.Decimal(15, 3)
-  discount      Decimal       @default(0) @db.Decimal(15, 3)
-  tax           Decimal       @default(0) @db.Decimal(15, 3)
-  total         Decimal       @default(0) @db.Decimal(15, 3)
-  amountPaid    Decimal       @default(0) @db.Decimal(15, 3)
-  balance       Decimal       @default(0) @db.Decimal(15, 3)
+  type          String   @default("CASH")
+  priceType     String   @default("RETAIL")
+  currency      String   @default("IQD")
+  exchangeRate  Decimal  @default(1480)
+  subtotal      Decimal  @default(0)
+  discount      Decimal  @default(0)
+  tax           Decimal  @default(0)
+  total         Decimal  @default(0)
+  amountPaid    Decimal  @default(0)
+  balance       Decimal  @default(0)
   notes         String?
   createdById   String
-  status        InvoiceStatus @default(DRAFT)
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  status        String   @default("DRAFT")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   customer  Customer?          @relation(fields: [customerId], references: [id])
   createdBy User               @relation(fields: [createdById], references: [id])
@@ -220,10 +155,10 @@ model SalesInvoiceItem {
   id         String    @id @default(cuid())
   invoiceId  String
   itemId     String
-  quantity   Decimal   @db.Decimal(15, 3)
-  unitPrice  Decimal   @db.Decimal(15, 3)
-  currency   Currency  @default(IQD)
-  subtotal   Decimal   @db.Decimal(15, 3)
+  quantity   Decimal
+  unitPrice  Decimal
+  currency   String    @default("IQD")
+  subtotal   Decimal
   expiryDate DateTime?
 
   invoice SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -234,22 +169,22 @@ model SalesInvoiceItem {
 }
 
 model PurchaseInvoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
   supplierId    String
-  currency      Currency      @default(IQD)
-  exchangeRate  Decimal       @default(1480) @db.Decimal(15, 3)
-  subtotal      Decimal       @default(0) @db.Decimal(15, 3)
-  discount      Decimal       @default(0) @db.Decimal(15, 3)
-  total         Decimal       @default(0) @db.Decimal(15, 3)
-  amountPaid    Decimal       @default(0) @db.Decimal(15, 3)
-  balance       Decimal       @default(0) @db.Decimal(15, 3)
+  currency      String   @default("IQD")
+  exchangeRate  Decimal  @default(1480)
+  subtotal      Decimal  @default(0)
+  discount      Decimal  @default(0)
+  total         Decimal  @default(0)
+  amountPaid    Decimal  @default(0)
+  balance       Decimal  @default(0)
   notes         String?
   createdById   String
-  status        InvoiceStatus @default(DRAFT)
-  isActive      Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  status        String   @default("DRAFT")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   supplier  Supplier              @relation(fields: [supplierId], references: [id])
   createdBy User                  @relation(fields: [createdById], references: [id])
@@ -266,10 +201,10 @@ model PurchaseInvoiceItem {
   id         String    @id @default(cuid())
   invoiceId  String
   itemId     String
-  quantity   Decimal   @db.Decimal(15, 3)
-  unitCost   Decimal   @db.Decimal(15, 3)
-  currency   Currency  @default(IQD)
-  subtotal   Decimal   @db.Decimal(15, 3)
+  quantity   Decimal
+  unitCost   Decimal
+  currency   String    @default("IQD")
+  subtotal   Decimal
   expiryDate DateTime?
 
   invoice PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -293,9 +228,9 @@ model Expense {
   id           String   @id @default(cuid())
   categoryId   String
   description  String
-  amount       Decimal  @db.Decimal(15, 3)
-  currency     Currency @default(IQD)
-  exchangeRate Decimal  @default(1480) @db.Decimal(15, 3)
+  amount       Decimal
+  currency     String   @default("IQD")
+  exchangeRate Decimal  @default(1480)
   paidBy       String?
   date         DateTime @default(now())
   createdById  String
@@ -314,14 +249,14 @@ model Expense {
 }
 
 model StockTransfer {
-  id          String         @id @default(cuid())
-  type        TransferType
+  id          String   @id @default(cuid())
+  type        String
   itemId      String
-  quantity    Decimal        @db.Decimal(15, 3)
-  reason      TransferReason
+  quantity    Decimal
+  reason      String
   createdById String
   notes       String?
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime @default(now())
 
   item      Item @relation(fields: [itemId], references: [id])
   createdBy User @relation(fields: [createdById], references: [id])
@@ -333,17 +268,17 @@ model StockTransfer {
 }
 
 model PaymentVoucher {
-  id            String      @id @default(cuid())
-  voucherNumber String      @unique
-  type          VoucherType
-  entityType    EntityType  @default(OTHER)
+  id            String   @id @default(cuid())
+  voucherNumber String   @unique
+  type          String
+  entityType    String   @default("OTHER")
   entityId      String?
-  amount        Decimal     @db.Decimal(15, 3)
-  currency      Currency    @default(IQD)
-  exchangeRate  Decimal     @default(1480) @db.Decimal(15, 3)
+  amount        Decimal
+  currency      String   @default("IQD")
+  exchangeRate  Decimal  @default(1480)
   description   String
   createdById   String
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime @default(now())
 
   createdBy User @relation(fields: [createdById], references: [id])
 
@@ -356,17 +291,17 @@ model PaymentVoucher {
 
 model CashStatement {
   id                String   @id @default(cuid())
-  date              DateTime @unique @db.Date
-  openingBalanceUSD Decimal  @default(0) @db.Decimal(15, 3)
-  openingBalanceIQD Decimal  @default(0) @db.Decimal(15, 3)
-  cashSalesUSD      Decimal  @default(0) @db.Decimal(15, 3)
-  cashSalesIQD      Decimal  @default(0) @db.Decimal(15, 3)
-  creditSales       Decimal  @default(0) @db.Decimal(15, 3)
-  receipts          Decimal  @default(0) @db.Decimal(15, 3)
-  disbursements     Decimal  @default(0) @db.Decimal(15, 3)
-  expenses          Decimal  @default(0) @db.Decimal(15, 3)
-  closingBalanceUSD Decimal  @default(0) @db.Decimal(15, 3)
-  closingBalanceIQD Decimal  @default(0) @db.Decimal(15, 3)
+  date              DateTime @unique
+  openingBalanceUSD Decimal  @default(0)
+  openingBalanceIQD Decimal  @default(0)
+  cashSalesUSD      Decimal  @default(0)
+  cashSalesIQD      Decimal  @default(0)
+  creditSales       Decimal  @default(0)
+  receipts          Decimal  @default(0)
+  disbursements     Decimal  @default(0)
+  expenses          Decimal  @default(0)
+  closingBalanceUSD Decimal  @default(0)
+  closingBalanceIQD Decimal  @default(0)
   isClosed          Boolean  @default(false)
   notes             String?
   createdAt         DateTime @default(now())
@@ -378,7 +313,7 @@ model CashStatement {
 
 model ExchangeRateHistory {
   id          String   @id @default(cuid())
-  rateIQD     Decimal  @db.Decimal(15, 3)
+  rateIQD     Decimal
   changedById String
   createdAt   DateTime @default(now())
 
