@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { salesService } from '@/services/sales.service'
+import { downloadSalesReportPDF } from '@/lib/pdf'
 
 type InvoiceStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED' | 'RETURNED'
 type PaymentType = 'CASH' | 'CREDIT'
@@ -49,6 +50,7 @@ export default function SalesPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [loading, setLoading] = useState(true)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -72,16 +74,60 @@ export default function SalesPage() {
 
   const totalPages = Math.ceil(total / 20)
 
+  async function handleDownloadPDF() {
+    setPdfLoading(true)
+    try {
+      const params: Record<string, string | number> = { page: 1, limit: 1000 }
+      if (search) params.search = search
+      if (status) params.status = status
+      if (fromDate) params.from = fromDate
+      if (toDate) params.to = toDate
+      const res = await salesService.getAll(params)
+      const allInvoices = res.data.data ?? []
+      const s = res.data
+      const summary = {
+        totalInvoices: s.total ?? allInvoices.length,
+        cashSalesIQD: allInvoices.filter((i: SalesInvoice) => i.type === 'CASH' && i.currency === 'IQD').reduce((a: number, i: SalesInvoice) => a + Number(i.total), 0),
+        cashSalesUSD: allInvoices.filter((i: SalesInvoice) => i.type === 'CASH' && i.currency === 'USD').reduce((a: number, i: SalesInvoice) => a + Number(i.total), 0),
+        creditSalesIQD: allInvoices.filter((i: SalesInvoice) => i.type === 'CREDIT' && i.currency === 'IQD').reduce((a: number, i: SalesInvoice) => a + Number(i.total), 0),
+        creditSalesUSD: allInvoices.filter((i: SalesInvoice) => i.type === 'CREDIT' && i.currency === 'USD').reduce((a: number, i: SalesInvoice) => a + Number(i.total), 0),
+        totalIQD: allInvoices.filter((i: SalesInvoice) => i.currency === 'IQD').reduce((a: number, i: SalesInvoice) => a + Number(i.total), 0),
+      }
+      await downloadSalesReportPDF(allInvoices, summary, { from: fromDate, to: toDate, status })
+    } catch {
+      // silent
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   return (
     <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">فواتير المبيعات</h1>
-        <button
-          onClick={() => router.push('/sales/new')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-        >
-          + فاتورة جديدة
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={pdfLoading || loading}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+          >
+            {pdfLoading ? (
+              <span className="animate-spin w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full inline-block" />
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )}
+            {pdfLoading ? 'جار التحميل...' : 'تصدير PDF'}
+          </button>
+          <button
+            onClick={() => router.push('/sales/new')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          >
+            + فاتورة جديدة
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap items-center">
