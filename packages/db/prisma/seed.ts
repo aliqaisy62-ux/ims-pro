@@ -18,6 +18,31 @@ async function main() {
     },
   })
 
+  // Test users for role comparison
+  await prisma.user.upsert({
+    where: { username: 'manager1' },
+    update: {},
+    create: {
+      username: 'manager1',
+      name: 'مدير تجريبي',
+      passwordHash: await bcrypt.hash('manager123', 12),
+      role: 'MANAGER',
+      language: 'ar',
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { username: 'cashier1' },
+    update: {},
+    create: {
+      username: 'cashier1',
+      name: 'كاشير تجريبي',
+      passwordHash: await bcrypt.hash('cashier123', 12),
+      role: 'CASHIER',
+      language: 'ar',
+    },
+  })
+
   // Item categories
   const categories = [
     { name_ar: 'إلكترونيات', name_en: 'Electronics' },
@@ -93,7 +118,9 @@ async function main() {
   })
 
   console.log('✅ Seed complete')
-  console.log(`   Admin user: admin / admin123`)
+  console.log(`   admin    / admin123   [ADMIN]`)
+  console.log(`   manager1 / manager123 [MANAGER]`)
+  console.log(`   cashier1 / cashier123 [CASHIER]`)
   console.log(`   Categories: ${categories.length} item + ${expenseCategories.length} expense`)
   console.log(`   Settings: ${settings.length} keys`)
 }
