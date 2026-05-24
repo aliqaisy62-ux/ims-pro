@@ -4,73 +4,63 @@
   "description": "IMS-Pro نظام إدارة المخزون — تطبيق ويندوز",
   "main": "main.js",
   "scripts": {
-    "dev": "electron .",
-    "build:win": "electron-builder --win --x64",
-    "build:portable": "electron-builder --win portable --x64",
-    "build:dir": "electron-builder --win --x64 --dir"
+    "dev":           "electron .",
+    "build:win":     "electron-builder --win --x64",
+    "build:portable":"electron-builder --win portable --x64",
+    "build:dir":     "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId": "com.etana.imspro",
+    "appId":       "com.etana.imspro",
     "productName": "IMS-Pro إيتانا",
-    "copyright": "Copyright © 2025 Etana",
+    "copyright":   "Copyright © 2025 Etana",
+    "asar":        true,
     "directories": {
-      "output": "dist",
-      "buildResources": "assets"
+      "output":          "dist",
+      "buildResources":  "assets"
     },
     "files": [
       "main.js",
       "preload.js",
       "splash.html"
     ],
+    "extraResources": [
+      {
+        "from": "staging/api",
+        "to":   "api",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "staging/web",
+        "to":   "web",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "assets/seed.db",
+        "to":   "seed.db"
+      }
+    ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
+        { "target": "nsis",     "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon": "assets/icon.ico",
+      "icon":                    "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
-      "oneClick": false,
-      "perMachine": false,
+      "oneClick":                       false,
+      "perMachine":                     false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "installerLanguages": ["Arabic", "English"],
-      "language": "1025"
-    },
-    "extraResources": [
-      {
-        "from": "../../apps/api",
-        "to": "api",
-        "filter": [
-          "dist/**",
-          "node_modules/**",
-          ".env",
-          "!node_modules/**/*.md",
-          "!node_modules/**/*.ts",
-          "!node_modules/.cache/**"
-        ]
-      },
-      {
-        "from": "../../apps/web/.next/standalone",
-        "to": "web",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "../../apps/web/.next/static",
-        "to": "web/.next/static",
-        "filter": ["**/*"]
-      },
-      {
-        "from": "../../apps/web/public",
-        "to": "web/public",
-        "filter": ["**/*"]
-      }
-    ]
+      "createDesktopShortcut":          true,
+      "createStartMenuShortcut":        true,
+      "installerLanguages":             ["Arabic", "English"],
+      "language":                       "1025",
+      "installerIcon":                  "assets/icon.ico",
+      "uninstallerIcon":                "assets/icon.ico"
+    }
   },
   "devDependencies": {
-    "electron": "^31.0.0",
+    "electron":         "^31.0.0",
     "electron-builder": "^24.13.3"
   }
 }

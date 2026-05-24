@@ -71,25 +71,44 @@ function killAll() {
   }
 }
 
+// ─── Database initialisation (production) ─────────────────────────────────────
+
+function initDatabase() {
+  const userDataPath = app.getPath('userData')
+  const dbFile = path.join(userDataPath, 'cashier.db')
+
+  if (!fs.existsSync(dbFile)) {
+    const seedDb = path.join(process.resourcesPath, 'seed.db')
+    if (!fs.existsSync(seedDb)) {
+      throw new Error(`seed.db not found in resources: ${seedDb}`)
+    }
+    fs.mkdirSync(userDataPath, { recursive: true })
+    fs.copyFileSync(seedDb, dbFile)
+    console.log(`[desktop] First run — copied seed.db to ${dbFile}`)
+  } else {
+    console.log(`[desktop] Database ready: ${dbFile}`)
+  }
+
+  // Single "file:" prefix + forward slashes — correct Prisma SQLite URI on Windows
+  return 'file:' + dbFile.replace(/\\/g, '/')
+}
+
 // ─── Server startup ────────────────────────────────────────────────────────────
 
 async function startServers() {
   const apiRunning = await isPortListening(API_PORT)
   const webRunning = await isPortListening(WEB_PORT)
 
-  // Resolve SQLite DB path — absolute so Prisma doesn't depend on CWD
-  const dbFile = IS_DEV
-    ? path.resolve(__dirname, '..', '..', 'data', 'cashier.db')
-    : path.join(app.getPath('userData'), 'cashier.db')
-  // Single "file:" prefix + forward slashes — correct Prisma SQLite URI on Windows
-  const dbUrl = 'file:' + dbFile.replace(/\\/g, '/')
-
   if (IS_DEV) {
     const root = path.resolve(__dirname, '..', '..')
 
+    // Resolve SQLite DB path for dev — absolute so Prisma ignores CWD
+    const devDbFile = path.resolve(root, 'data', 'cashier.db')
+    const devDbUrl  = 'file:' + devDbFile.replace(/\\/g, '/')
+
     if (!apiRunning) {
       spawnServer('npm', ['run', 'dev'], path.join(root, 'apps', 'api'), {
-        DATABASE_URL: dbUrl,
+        DATABASE_URL: devDbUrl,
       })
     } else {
       console.log(`[desktop] API already on :${API_PORT}`)
@@ -104,44 +123,30 @@ async function startServers() {
     }
   } else {
     // Production: servers live in electron extraResources
-    const res = process.resourcesPath
+    const res    = process.resourcesPath
     const apiDir = path.join(res, 'api')
     const webDir = path.join(res, 'web')
 
-    // Merge env: user-configured overrides bundled default
-    const userEnvPath = path.join(app.getPath('userData'), 'app.env')
-    const bundledEnvPath = path.join(apiDir, '.env')
-    const envPath = fs.existsSync(userEnvPath) ? userEnvPath : bundledEnvPath
-
-    const apiEnv = {}
-    if (fs.existsSync(envPath)) {
-      fs.readFileSync(envPath, 'utf-8')
-        .split(/\r?\n/)
-        .forEach((line) => {
-          const eq = line.indexOf('=')
-          if (eq > 0) {
-            const k = line.slice(0, eq).trim()
-            const v = line.slice(eq + 1).trim()
-            if (k && !k.startsWith('#')) apiEnv[k] = v
-          }
-        })
-    }
+    // Initialise / locate the SQLite database
+    const dbUrl = initDatabase()
 
     if (!apiRunning) {
-      spawnServer('node', ['dist/index.js'], apiDir, {
-        ...apiEnv,
-        DATABASE_URL: dbUrl,
-        PORT: String(API_PORT),
-        NODE_ENV: 'production',
+      spawnServer('node', ['server.js'], apiDir, {
+        DATABASE_URL:       dbUrl,
+        JWT_SECRET:         'ims-pro-jwt-secret-change-before-production-min-32-chars',
+        JWT_REFRESH_SECRET: 'ims-pro-refresh-secret-change-before-production-min-32-chars',
+        PORT:               String(API_PORT),
+        NODE_ENV:           'production',
+        CORS_ORIGIN:        `http://localhost:${WEB_PORT}`,
       })
     }
 
     if (!webRunning) {
       spawnServer('node', ['server.js'], webDir, {
-        PORT: String(WEB_PORT),
-        HOSTNAME: '127.0.0.1',
-        NODE_ENV: 'production',
-        NEXT_PUBLIC_API_URL: `http://localhost:${API_PORT}`,
+        PORT:                   String(WEB_PORT),
+        HOSTNAME:               '127.0.0.1',
+        NODE_ENV:               'production',
+        NEXT_PUBLIC_API_URL:    `http://localhost:${API_PORT}`,
       })
     }
   }
@@ -226,7 +231,7 @@ app.whenReady().then(async () => {
     destroySplash()
     dialog.showErrorBox(
       'خطأ في تشغيل IMS-Pro',
-      `تعذّر تشغيل الخوادم الداخلية.\n\nتأكد من أن قاعدة البيانات (Docker) تعمل وأن المنافذ ${API_PORT} و${WEB_PORT} متاحة.\n\nالتفاصيل: ${err.message}`,
+      `تعذّر تشغيل الخوادم الداخلية.\n\nالتفاصيل: ${err.message}`,
     )
     app.quit()
   }

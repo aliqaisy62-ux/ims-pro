@@ -56,6 +56,11 @@ backups/
 # Claude Code local settings
 .claude/settings.local.json
 
+# Electron build artifacts
+apps/desktop/staging/
+apps/desktop/dist/
+apps/desktop/assets/seed.db
+
 # Test / screenshot artifacts
 *.png
 screenshot.js
