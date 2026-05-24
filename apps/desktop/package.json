@@ -1,32 +1,73 @@
 {
-  "name": "etana-desktop",
+  "name": "@ims-pro/desktop",
   "version": "1.0.0",
-  "description": "Etana IMS — Windows Desktop App",
+  "description": "IMS-Pro نظام إدارة المخزون — تطبيق ويندوز",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "dev": "electron .",
     "build:win": "electron-builder --win --x64",
-    "build:portable": "electron-builder --win portable --x64"
+    "build:portable": "electron-builder --win portable --x64",
+    "build:dir": "electron-builder --win --x64 --dir"
   },
   "build": {
-    "appId": "com.etana.desktop",
-    "productName": "Etana",
+    "appId": "com.etana.imspro",
+    "productName": "IMS-Pro إيتانا",
+    "copyright": "Copyright © 2025 Etana",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html"
+    ],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["ar", "en"],
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerLanguages": ["Arabic", "English"],
       "language": "1025"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "../../apps/api",
+        "to": "api",
+        "filter": [
+          "dist/**",
+          "node_modules/**",
+          ".env",
+          "!node_modules/**/*.md",
+          "!node_modules/**/*.ts",
+          "!node_modules/.cache/**"
+        ]
+      },
+      {
+        "from": "../../apps/web/.next/standalone",
+        "to": "web",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../../apps/web/.next/static",
+        "to": "web/.next/static",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../../apps/web/public",
+        "to": "web/public",
+        "filter": ["**/*"]
+      }
+    ]
   },
   "devDependencies": {
     "electron": "^31.0.0",
