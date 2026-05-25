@@ -52,9 +52,12 @@ function waitForPort(port, timeoutMs) {
 
 function spawnServer(cmd, args, cwd, env = {}) {
   const label = path.basename(cwd)
+  // shell:true only needed when using plain 'npm' / 'node' (PATH lookup on Windows).
+  // When cmd is an absolute .exe path (production bundled node.exe), skip the shell.
+  const useShell = !path.isAbsolute(cmd) && process.platform === 'win32'
   const proc = spawn(cmd, args, {
     cwd,
-    shell: process.platform === 'win32',
+    shell: useShell,
     env: { ...process.env, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -123,15 +126,17 @@ async function startServers() {
     }
   } else {
     // Production: servers live in electron extraResources
-    const res    = process.resourcesPath
-    const apiDir = path.join(res, 'api')
-    const webDir = path.join(res, 'web')
+    const res     = process.resourcesPath
+    const apiDir  = path.join(res, 'api')
+    const webDir  = path.join(res, 'web')
+    // Use the bundled node.exe — clients need no system Node.js installed
+    const nodeExe = path.join(res, 'node', 'node.exe')
 
     // Initialise / locate the SQLite database
     const dbUrl = initDatabase()
 
     if (!apiRunning) {
-      spawnServer('node', ['server.js'], apiDir, {
+      spawnServer(nodeExe, ['server.js'], apiDir, {
         DATABASE_URL:       dbUrl,
         JWT_SECRET:         'ims-pro-jwt-secret-change-before-production-min-32-chars',
         JWT_REFRESH_SECRET: 'ims-pro-refresh-secret-change-before-production-min-32-chars',
@@ -142,11 +147,11 @@ async function startServers() {
     }
 
     if (!webRunning) {
-      spawnServer('node', ['server.js'], webDir, {
-        PORT:                   String(WEB_PORT),
-        HOSTNAME:               '127.0.0.1',
-        NODE_ENV:               'production',
-        NEXT_PUBLIC_API_URL:    `http://localhost:${API_PORT}`,
+      spawnServer(nodeExe, ['server.js'], webDir, {
+        PORT:                String(WEB_PORT),
+        HOSTNAME:            '127.0.0.1',
+        NODE_ENV:            'production',
+        NEXT_PUBLIC_API_URL: `http://localhost:${API_PORT}`,
       })
     }
   }

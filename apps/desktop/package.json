@@ -37,6 +37,11 @@
         "filter": ["**/*"]
       },
       {
+        "from": "staging/node",
+        "to":   "node",
+        "filter": ["**/*"]
+      },
+      {
         "from": "assets/seed.db",
         "to":   "seed.db"
       }
