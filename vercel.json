@@ -4,6 +4,7 @@
   "buildCommand": "npm run build --workspace=apps/web",
   "outputDirectory": "apps/web/.next",
   "env": {
-    "NEXT_OUTPUT_STANDALONE": "0"
+    "NEXT_OUTPUT_STANDALONE": "0",
+    "NEXT_PUBLIC_API_URL": "https://ims-proapi-production.up.railway.app"
   }
 }
