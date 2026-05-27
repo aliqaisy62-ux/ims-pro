@@ -22,16 +22,16 @@ const app = express()
 const PORT = process.env.PORT || 4000
 
 app.use(helmet())
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001').split(',')
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim())
 app.use(cors({
   origin: (origin, cb) => {
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return cb(null, true)
     // Allow any LAN/private-network origin in development
-    if (
-      allowedOrigins.includes(origin) ||
-      /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)
-    ) return cb(null, true)
+    if (/^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) return cb(null, true)
+    // Allow Vercel preview deployments (*.vercel.app)
+    if (/^https:\/\/[a-z0-9-]+(\.vercel\.app)$/.test(origin)) return cb(null, true)
+    if (allowedOrigins.includes(origin)) return cb(null, true)
     cb(new Error(`CORS: origin ${origin} not allowed`))
   },
   credentials: true,
