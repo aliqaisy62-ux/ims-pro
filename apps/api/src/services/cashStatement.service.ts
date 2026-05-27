@@ -66,7 +66,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Cash sales IQD
   const cashSalesIQDRows = await prisma.$queryRaw<RawSalesRow[]>`
-    SELECT COALESCE(SUM(total), 0)::text AS total_sum
+    SELECT CAST(COALESCE(SUM(total), 0) AS TEXT) AS total_sum
     FROM "SalesInvoice"
     WHERE type = 'CASH'
       AND currency = 'IQD'
@@ -78,7 +78,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Cash sales USD
   const cashSalesUSDRows = await prisma.$queryRaw<RawSalesRow[]>`
-    SELECT COALESCE(SUM(total), 0)::text AS total_sum
+    SELECT CAST(COALESCE(SUM(total), 0) AS TEXT) AS total_sum
     FROM "SalesInvoice"
     WHERE type = 'CASH'
       AND currency = 'USD'
@@ -90,7 +90,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Credit sales (all currencies converted to IQD)
   const creditSalesRows = await prisma.$queryRaw<RawSalesRow[]>`
-    SELECT COALESCE(
+    SELECT CAST(COALESCE(
       SUM(
         CASE
           WHEN currency = 'USD' THEN total * "exchangeRate"
@@ -98,7 +98,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
         END
       ),
       0
-    )::text AS total_sum
+    ) AS TEXT) AS total_sum
     FROM "SalesInvoice"
     WHERE type = 'CREDIT'
       AND status = 'CONFIRMED'
@@ -109,7 +109,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Receipts (RECEIPT vouchers → IQD equivalent)
   const receiptsRows = await prisma.$queryRaw<RawVoucherRow[]>`
-    SELECT COALESCE(
+    SELECT CAST(COALESCE(
       SUM(
         CASE
           WHEN currency = 'USD' THEN amount * "exchangeRate"
@@ -117,7 +117,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
         END
       ),
       0
-    )::text AS total_iqd
+    ) AS TEXT) AS total_iqd
     FROM "PaymentVoucher"
     WHERE type = 'RECEIPT'
       AND "createdAt" >= ${dayStart}
@@ -127,7 +127,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Disbursements (DISBURSEMENT vouchers → IQD equivalent)
   const disbursementsRows = await prisma.$queryRaw<RawVoucherRow[]>`
-    SELECT COALESCE(
+    SELECT CAST(COALESCE(
       SUM(
         CASE
           WHEN currency = 'USD' THEN amount * "exchangeRate"
@@ -135,7 +135,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
         END
       ),
       0
-    )::text AS total_iqd
+    ) AS TEXT) AS total_iqd
     FROM "PaymentVoucher"
     WHERE type = 'DISBURSEMENT'
       AND "createdAt" >= ${dayStart}
@@ -145,7 +145,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
 
   // Expenses — use stored exchangeRate on each expense record
   const expensesRows = await prisma.$queryRaw<RawExpenseRow[]>`
-    SELECT COALESCE(
+    SELECT CAST(COALESCE(
       SUM(
         CASE
           WHEN currency = 'USD' THEN amount * "exchangeRate"
@@ -153,7 +153,7 @@ export async function calculateDayData(date: Date): Promise<DayData> {
         END
       ),
       0
-    )::text AS total_iqd
+    ) AS TEXT) AS total_iqd
     FROM "Expense"
     WHERE "isActive" = true
       AND date >= ${dayStart}
