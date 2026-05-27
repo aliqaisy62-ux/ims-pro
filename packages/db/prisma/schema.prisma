@@ -3,12 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
-// SQLite note: enums are stored as TEXT with CHECK constraints.
-// Decimal fields are stored as REAL (sufficient for local POS use).
 
 model User {
   id           String   @id @default(cuid())
