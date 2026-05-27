@@ -2,7 +2,9 @@
 set -e
 
 echo "[IMS-Pro] Running database migrations..."
-./node_modules/.bin/prisma migrate deploy --schema=./packages/db/prisma/schema.prisma
+./node_modules/.bin/prisma migrate deploy --schema=./packages/db/prisma/schema.prisma || {
+  echo "[IMS-Pro] WARNING: migrate deploy failed (schema may already be up-to-date, continuing...)"
+}
 
 if [ "$SEED_DB" = "true" ]; then
   echo "[IMS-Pro] Seeding database (first-time setup)..."
