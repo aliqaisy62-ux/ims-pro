@@ -1,5 +1,7 @@
-import { PriceType, Currency } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
+
+type PriceType = 'RETAIL' | 'WHOLESALE' | 'SPECIAL' | 'DINAR' | 'DOLLAR'
+type Currency = 'IQD' | 'USD'
 
 export function resolvePrice(
   item: {

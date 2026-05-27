@@ -33,7 +33,7 @@ export async function getSalesInvoices(params: {
 
   const where: Prisma.SalesInvoiceWhereInput = { isActive: true }
 
-  if (status) where.status = status as Prisma.EnumInvoiceStatusFilter
+  if (status) where.status = status
   if (customerId) where.customerId = customerId
   if (from || to) {
     where.createdAt = {}
