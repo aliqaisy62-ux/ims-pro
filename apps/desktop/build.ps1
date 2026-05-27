@@ -102,8 +102,9 @@ Write-Step 4 "Building Next.js (standalone mode)..."
 
 Push-Location (Join-Path $Root 'apps\web')
 try {
-  $env:NEXT_PUBLIC_API_URL = 'http://localhost:4001'
-  $env:NODE_ENV = 'production'
+  $env:NEXT_PUBLIC_API_URL    = 'http://localhost:4001'
+  $env:NODE_ENV               = 'production'
+  $env:NEXT_OUTPUT_STANDALONE = '1'   # tells next.config.mjs to use standalone output
   npm run build
   if ($LASTEXITCODE -ne 0) { Write-Fail "Next.js build exited with code $LASTEXITCODE" }
   $standaloneDir = Join-Path $Root 'apps\web\.next\standalone'
