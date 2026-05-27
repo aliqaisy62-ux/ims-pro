@@ -1,7 +1,23 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-// DEV MODE: auth bypassed — all routes are open
-export function middleware() {
+const PUBLIC_PATHS = ['/login']
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const hasRefreshCookie = request.cookies.has('__refresh_token')
+
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    if (hasRefreshCookie) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return NextResponse.next()
+  }
+
+  if (!hasRefreshCookie) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   return NextResponse.next()
 }
 
