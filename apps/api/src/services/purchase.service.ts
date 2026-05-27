@@ -31,7 +31,7 @@ export async function getPurchaseInvoices(params: {
   const where: Prisma.PurchaseInvoiceWhereInput = { isActive: true }
 
   if (status) {
-    where.status = status as Prisma.EnumInvoiceStatusFilter
+    where.status = status
   }
   if (supplierId) {
     where.supplierId = supplierId
