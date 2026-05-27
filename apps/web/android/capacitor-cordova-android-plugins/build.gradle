@@ -9,7 +9,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"    }
+        classpath 'com.android.tools.build:gradle:8.13.0'
+    }
 }
 
 apply plugin: 'com.android.library'
@@ -22,22 +23,13 @@ android {
         targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 36
         versionCode 1
         versionName "1.0"
-        packagingOptions {
-            resources {
-                // هذا الكود يمنع تكرار ملفات كوتلن التي تسبب الخطأ
-                excludes += 'META-INF/kotlin-stdlib.kotlin_module'
-                excludes += 'META-INF/kotlin-stdlib-jdk8.kotlin_module'
-                excludes += 'META-INF/kotlin-stdlib-jdk7.kotlin_module'
-                excludes += 'META-INF/kotlin-stdlib-common.kotlin_module'
-            }
-        }
     }
     lintOptions {
         abortOnError = false
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 }
 
@@ -64,12 +56,4 @@ apply from: "cordova.variables.gradle"
 
 for (def func : cdvPluginPostBuildExtras) {
     func()
-}
-configurations.all {
-    resolutionStrategy {
-        force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.10'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.9.10'
-    }
 }
