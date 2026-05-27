@@ -5,14 +5,13 @@ import { CreateSalesInvoiceInput } from '../validators/sales.validator'
 const prisma = new PrismaClient()
 
 async function generateInvoiceNumberInTx(tx: Prisma.TransactionClient): Promise<string> {
-  // Advisory lock serializes number generation across concurrent transactions
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(20260001)`
   const now = new Date()
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
   const prefix = `INV-${dateStr}-`
-  // Use MAX of existing sequence numbers for today to avoid gaps from deletions
-  const result = await tx.$queryRaw<{ max_num: string | null }[]>`
-    SELECT MAX(SUBSTRING("invoiceNumber" FROM ${prefix.length + 1}::int)::int) AS max_num
+  // SQLite-compatible: use SUBSTR instead of PostgreSQL SUBSTRING ... FROM
+  const startPos = prefix.length + 1
+  const result = await tx.$queryRaw<{ max_num: number | null }[]>`
+    SELECT MAX(CAST(SUBSTR("invoiceNumber", ${startPos}) AS INTEGER)) AS max_num
     FROM "SalesInvoice"
     WHERE "invoiceNumber" LIKE ${prefix + '%'}
   `

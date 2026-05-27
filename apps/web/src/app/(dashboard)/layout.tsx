@@ -37,16 +37,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isAllowed(pathname, user.role)) router.replace('/dashboard')
   }, [user, isLoading, router, pathname])
 
-  if (isLoading) {
+  if (isLoading || !user || !isAllowed(pathname, user.role)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500 text-lg">جار التحميل...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-gray-400 text-lg">جار التحميل...</div>
       </div>
     )
   }
-
-  if (!user) return null
-  if (!isAllowed(pathname, user.role)) return null
 
   return <DashboardShell>{children}</DashboardShell>
 }
