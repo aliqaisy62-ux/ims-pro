@@ -124,8 +124,13 @@ $PublicDir   = Join-Path $WebSrc 'public'
 
 Copy-Item -Recurse -Force "$Standalone\*" "$StagingWeb\"
 
-$DestStatic = Join-Path $StagingWeb '.next\static'
-$DestPublic = Join-Path $StagingWeb 'public'
+# In a monorepo, Next.js standalone places server.js at apps/web/server.js.
+# Static assets and public must live alongside server.js so the server can find them.
+$WebAppDir  = Join-Path $StagingWeb 'apps\web'
+New-Item -ItemType Directory -Force $WebAppDir | Out-Null
+
+$DestStatic = Join-Path $WebAppDir '.next\static'
+$DestPublic = Join-Path $WebAppDir 'public'
 
 if (Test-Path $DestStatic) { Remove-Item $DestStatic -Recurse -Force }
 Copy-Item -Recurse -Force $NextStatic $DestStatic

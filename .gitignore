@@ -40,14 +40,18 @@ Thumbs.db
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 
-# SQLite database (portable — not committed, lives in data/)
+# SQLite database files — never commit live data
 *.db
 *.db-shm
 *.db-wal
+*.db-journal
 data/cashier.db
 data/logs/
 data/backups/
 data/receipts/
+
+# Desktop app logs written to user home
+IMS-Pro-Logs/
 
 # Backups
 backups/
@@ -61,6 +65,7 @@ apps/desktop/staging/
 apps/desktop/dist/
 apps/desktop/assets/seed.db
 
-# Test / screenshot artifacts
+# Test / debug artifacts
 *.png
 screenshot.js
+debug.js
