@@ -1,0 +1,26 @@
+# Dependencies — Vercel installs these itself
+node_modules
+
+# Electron desktop build artifacts (huge — not needed for web deploy)
+apps/desktop/dist
+apps/desktop/staging
+apps/desktop/assets/seed.db
+
+# SQLite database (never deploy live data)
+data
+*.db
+*.db-shm
+*.db-wal
+
+# Build caches
+.next
+.turbo
+
+# Logs and debug files
+*.log
+IMS-Pro-Logs
+debug.js
+screenshot.js
+
+# Backups
+backups
