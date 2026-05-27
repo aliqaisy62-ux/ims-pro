@@ -59,7 +59,7 @@ function logStartInfo(res) {
 
   check('node.exe',            path.join(res, 'node', 'node.exe'))
   check('api/server.js',       path.join(res, 'api', 'server.js'))
-  check('web/server.js',       path.join(res, 'web', 'server.js'))
+  check('web/apps/web/srv.js', path.join(res, 'web', 'apps', 'web', 'server.js'))
   check('seed.db',             path.join(res, 'seed.db'))
   check('.prisma/client',      path.join(res, 'api', 'node_modules', '.prisma', 'client'))
   check('query_engine.node',   path.join(res, 'api', 'node_modules', '.prisma', 'client',
@@ -123,34 +123,37 @@ function waitForPort(port, timeoutMs) {
   })
 }
 
-// Polls /api/health until it returns 200 or times out.
-function waitForApiHealth(timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const deadline = Date.now() + timeoutMs
-    const attempt  = () => {
+// Polls /api/health — retries up to maxRetries times with delayMs between each.
+// Both connection errors AND non-200 responses are treated as retriable.
+async function waitForApiHealth(maxRetries = 5, delayMs = 2000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const ok = await new Promise((resolve) => {
       const req = http.get(
         { hostname: '127.0.0.1', port: API_PORT, path: '/api/health' },
         (res) => {
           let body = ''
           res.on('data', (d) => { body += d })
           res.on('end', () => {
-            log(`[api] health check: HTTP ${res.statusCode} — ${body.slice(0, 120)}`)
-            if (res.statusCode === 200) resolve()
-            else reject(new Error(`API health returned ${res.statusCode}: ${body.slice(0, 200)}`))
+            log(`[api] health attempt ${attempt}/${maxRetries}: HTTP ${res.statusCode} — ${body.slice(0, 80)}`)
+            resolve(res.statusCode === 200)
           })
         }
       )
       req.on('error', (e) => {
-        if (Date.now() >= deadline) {
-          reject(new Error(`API health timeout after ${timeoutMs / 1000}s — ${e.message}`))
-        } else {
-          setTimeout(attempt, 800)
-        }
+        log(`[api] health attempt ${attempt}/${maxRetries}: ${e.message}`)
+        resolve(false)
       })
       req.end()
+    })
+
+    if (ok) return
+
+    if (attempt < maxRetries) {
+      log(`[api] retrying in ${delayMs / 1000}s...`)
+      await new Promise(r => setTimeout(r, delayMs))
     }
-    attempt()
-  })
+  }
+  throw new Error(`API did not return 200 after ${maxRetries} attempts — check ${LOG_FILE}`)
 }
 
 // Kill any process LISTENING on the given port (production stale-process cleanup).
@@ -209,6 +212,10 @@ function initDatabase(res) {
   log(`[db] userData path : ${userDataPath}`)
   log(`[db] database path : ${dbFile}`)
 
+  // Always ensure the folder exists before any file operations.
+  fs.mkdirSync(userDataPath, { recursive: true })
+  log(`[db] userData folder : ${fs.existsSync(userDataPath) ? 'EXISTS' : 'CREATED'}`)
+
   if (!fs.existsSync(dbFile)) {
     const seedDb = path.join(res, 'seed.db')
     log(`[db] First run — seed.db: ${seedDb}  exists=${fs.existsSync(seedDb)}`)
@@ -220,7 +227,6 @@ function initDatabase(res) {
       )
     }
 
-    fs.mkdirSync(userDataPath, { recursive: true })
     fs.copyFileSync(seedDb, dbFile)
     log(`[db] Copied seed.db → ${dbFile}`)
   }
@@ -279,21 +285,42 @@ async function startServers() {
   }
 
   // ── Production ──────────────────────────────────────────────────────────────
-  const res     = process.resourcesPath
-  const apiDir  = path.join(res, 'api')
-  const webDir  = path.join(res, 'web')
-  const nodeExe = path.join(res, 'node', 'node.exe')
+  const res          = process.resourcesPath
+  const apiDir       = path.join(res, 'api')
+  const webDir       = path.join(res, 'web')
+  // In a monorepo Next.js standalone, server.js lives at apps/web/server.js
+  const webServerDir = path.join(webDir, 'apps', 'web')
+  const nodeExe      = path.join(res, 'node', 'node.exe')
   const prismaEngineLib = path.join(
     apiDir, 'node_modules', '.prisma', 'client', 'query_engine-windows.dll.node'
   )
 
   logStartInfo(res)
 
+  // Path diagnostic dialog — shows exact paths before any crash so mismatches are obvious.
+  dialog.showMessageBoxSync({
+    type: 'info',
+    title: 'IMS-Pro — Path Diagnostic',
+    message: 'Startup paths (close to continue)',
+    detail: [
+      `resourcesPath : ${res}`,
+      `node.exe      : ${nodeExe}  [${fs.existsSync(nodeExe) ? 'EXISTS' : 'MISSING'}]`,
+      `api/server.js : ${path.join(apiDir, 'server.js')}  [${fs.existsSync(path.join(apiDir, 'server.js')) ? 'EXISTS' : 'MISSING'}]`,
+      `web/server.js : ${path.join(webServerDir, 'server.js')}  [${fs.existsSync(path.join(webServerDir, 'server.js')) ? 'EXISTS' : 'MISSING'}]`,
+      `seed.db       : ${path.join(res, 'seed.db')}  [${fs.existsSync(path.join(res, 'seed.db')) ? 'EXISTS' : 'MISSING'}]`,
+      `userData      : ${app.getPath('userData')}`,
+    ].join('\n'),
+  })
+
   // Hard checks before any spawn attempt
-  if (!fs.existsSync(nodeExe))                    throw new Error(`Bundled node.exe not found:\n${nodeExe}`)
-  if (!fs.existsSync(path.join(apiDir,'server.js'))) throw new Error(`api/server.js not found:\n${apiDir}`)
-  if (!fs.existsSync(path.join(webDir,'server.js'))) throw new Error(`web/server.js not found:\n${webDir}`)
-  if (!fs.existsSync(prismaEngineLib))            log(`[warn] Prisma engine .node file missing — API may crash:\n${prismaEngineLib}`)
+  if (!fs.existsSync(nodeExe))
+    throw new Error(`Bundled node.exe not found:\n${nodeExe}`)
+  if (!fs.existsSync(path.join(apiDir, 'server.js')))
+    throw new Error(`api/server.js not found:\n${apiDir}`)
+  if (!fs.existsSync(path.join(webServerDir, 'server.js')))
+    throw new Error(`web/apps/web/server.js not found:\n${webServerDir}`)
+  if (!fs.existsSync(prismaEngineLib))
+    log(`[warn] Prisma engine .node file missing — API may crash:\n${prismaEngineLib}`)
 
   // Kill stale processes then re-check ports
   log(`[app] Clearing stale processes on :${API_PORT} and :${WEB_PORT}`)
@@ -325,8 +352,8 @@ async function startServers() {
   }
 
   if (!webRunning) {
-    log(`[app] Spawning Web: ${nodeExe} server.js in ${webDir}`)
-    spawnServer(nodeExe, ['server.js'], webDir, {
+    log(`[app] Spawning Web: ${nodeExe} server.js in ${webServerDir}`)
+    spawnServer(nodeExe, ['server.js'], webServerDir, {
       PORT:                String(WEB_PORT),
       HOSTNAME:            '127.0.0.1',
       NODE_ENV:            'production',
@@ -411,8 +438,8 @@ app.whenReady().then(async () => {
       waitForPort(WEB_PORT, 120_000),
     ])
 
-    // Then confirm the API is actually serving requests
-    await waitForApiHealth(30_000)
+    // Then confirm the API is actually serving requests (5 retries × 2s)
+    await waitForApiHealth(5, 2000)
 
     await createMainWindow()
   } catch (err) {
