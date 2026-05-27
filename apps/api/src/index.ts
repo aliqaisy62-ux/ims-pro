@@ -21,6 +21,10 @@ import reportsRouter from './routes/reports.routes'
 const app = express()
 const PORT = process.env.PORT || 4000
 
+// Trust Railway/Vercel/Heroku reverse proxy so express-rate-limit
+// reads the real client IP from X-Forwarded-For instead of crashing.
+app.set('trust proxy', 1)
+
 app.use(helmet())
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001').split(',').map(s => s.trim())
 app.use(cors({
