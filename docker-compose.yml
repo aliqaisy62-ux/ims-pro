@@ -97,7 +97,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx_logs:/var/log/nginx
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
