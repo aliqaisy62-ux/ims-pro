@@ -13,7 +13,7 @@ export const createSalesInvoiceSchema = z.object({
   paymentType: z.enum(['CASH', 'CREDIT']),
   currency: z.enum(['USD', 'IQD']),
   exchangeRate: z.number().positive(),
-  discount: z.number().min(0).default(0),
+  discount: z.number().min(0).max(100).default(0),
   notes: z.string().optional(),
   items: z.array(salesLineSchema).min(1),
 })

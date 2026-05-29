@@ -2,8 +2,8 @@ import { Request, Response } from 'express'
 import {
   validateCredentials,
   generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
+  rotateRefreshSession,
+  revokeRefreshSession,
   getUserById,
 } from '../services/auth.service'
 import { logAudit } from '../services/audit.service'
@@ -11,8 +11,6 @@ import { logAudit } from '../services/audit.service'
 const COOKIE_NAME = '__refresh_token'
 const ROLE_COOKIE = '__user_role'
 
-// HTTPS_ENABLED must be explicitly set to "true" — NODE_ENV alone is not enough
-// because LAN deployments run production mode over plain HTTP.
 const isHttps = process.env.HTTPS_ENABLED === 'true'
 
 const COOKIE_OPTIONS = {
@@ -24,7 +22,6 @@ const COOKIE_OPTIONS = {
 }
 
 // Non-HttpOnly so Next.js middleware can read it for role-based routing.
-// The role is not a security secret — actual authorization is enforced on the API side.
 const ROLE_COOKIE_OPTIONS = {
   httpOnly: false,
   sameSite: isHttps ? ('none' as const) : ('lax' as const),
@@ -35,43 +32,55 @@ const ROLE_COOKIE_OPTIONS = {
 
 export async function login(req: Request, res: Response) {
   const { username, password } = req.body
-  const user = await validateCredentials(username, password)
-  if (!user) {
+  const result = await validateCredentials(username, password)
+
+  if (!result) {
     return res.status(401).json({ success: false, error: 'Invalid username or password' })
   }
+  if ('locked' in result) {
+    return res.status(429).json({
+      success: false,
+      error: 'Account temporarily locked due to too many failed attempts',
+      lockedUntil: result.lockedUntil,
+    })
+  }
+
+  const { user, rawRefreshToken } = result
   const accessToken = generateAccessToken(user)
-  const refreshToken = generateRefreshToken(user.id)
-  res.cookie(COOKIE_NAME, refreshToken, COOKIE_OPTIONS)
+  res.cookie(COOKIE_NAME, rawRefreshToken, COOKIE_OPTIONS)
   res.cookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTIONS)
   logAudit(user.id, 'LOGIN', 'User', user.id, undefined, req.ip)
   return res.json({ success: true, data: { accessToken, user } })
 }
 
 export async function refresh(req: Request, res: Response) {
-  const token = req.cookies?.[COOKIE_NAME]
-  if (!token) {
+  const rawToken = req.cookies?.[COOKIE_NAME]
+  if (!rawToken) {
     return res.status(401).json({ success: false, error: 'No refresh token' })
   }
-  const payload = verifyRefreshToken(token)
-  if (!payload) {
-    res.clearCookie(COOKIE_NAME)
+
+  const result = await rotateRefreshSession(
+    rawToken,
+    req.headers['user-agent'],
+    req.ip
+  )
+
+  if (!result) {
+    res.clearCookie(COOKIE_NAME, { path: '/' })
     res.clearCookie(ROLE_COOKIE, { path: '/' })
-    return res.status(401).json({ success: false, error: 'Invalid refresh token' })
+    return res.status(401).json({ success: false, error: 'Invalid or expired refresh token' })
   }
-  const user = await getUserById(payload.sub)
-  if (!user) {
-    res.clearCookie(COOKIE_NAME)
-    res.clearCookie(ROLE_COOKIE, { path: '/' })
-    return res.status(401).json({ success: false, error: 'User not found or deactivated' })
-  }
-  const newRefreshToken = generateRefreshToken(user.id)
-  res.cookie(COOKIE_NAME, newRefreshToken, COOKIE_OPTIONS)
+
+  const { user, rawRefreshToken: newRawToken } = result
+  res.cookie(COOKIE_NAME, newRawToken, COOKIE_OPTIONS)
   res.cookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTIONS)
   return res.json({ success: true, data: { accessToken: generateAccessToken(user), user } })
 }
 
 export async function logout(req: Request, res: Response) {
   if (req.user?.id) logAudit(req.user.id, 'LOGOUT', 'User', req.user.id, undefined, req.ip)
+  const rawToken = req.cookies?.[COOKIE_NAME]
+  if (rawToken) await revokeRefreshSession(rawToken)
   res.clearCookie(COOKIE_NAME, { path: '/' })
   res.clearCookie(ROLE_COOKIE, { path: '/' })
   return res.json({ success: true })

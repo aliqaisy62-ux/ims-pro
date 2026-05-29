@@ -16,10 +16,18 @@ export const updateExchangeRateSchema = z.object({
 
 const ALL_ROLES = ['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER', 'ACCOUNTANT', 'STAFF'] as const
 
+const strongPassword = z
+  .string()
+  .min(12, 'Password must be at least 12 characters')
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-#])/,
+    'Password must contain uppercase, lowercase, number, and special character (@$!%*?&-#)'
+  )
+
 export const createUserSchema = z.object({
   name: z.string().min(2).max(100),
   username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/),
-  password: z.string().min(6),
+  password: strongPassword,
   role: z.enum(ALL_ROLES),
   language: z.enum(['ar', 'en']).default('ar'),
 })
@@ -32,7 +40,7 @@ export const updateUserSchema = z.object({
 })
 
 export const resetPasswordSchema = z.object({
-  newPassword: z.string().min(6),
+  newPassword: strongPassword,
 })
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>

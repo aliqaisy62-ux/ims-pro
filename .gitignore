@@ -71,3 +71,9 @@ screenshot.js
 debug.js
 
 .vercel
+
+# Sensitive internal docs — never commit operational notes to public repos
+CLAUDE.md
+*_PRIVATE.md
+*_SECRETS.md
+*.local.md

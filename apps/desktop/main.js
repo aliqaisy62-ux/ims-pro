@@ -6,6 +6,26 @@ const path = require('path')
 const http = require('http')
 const fs = require('fs')
 const os = require('os')
+const crypto = require('crypto')
+
+// ─── Per-install JWT secrets ───────────────────────────────────────────────────
+// Generated once on first launch and persisted in the userData directory.
+// Never hardcoded so each installation has unique secrets.
+function getOrCreateSecrets(userDataPath) {
+  const secretsFile = path.join(userDataPath, 'secrets.json')
+  if (fs.existsSync(secretsFile)) {
+    try {
+      return JSON.parse(fs.readFileSync(secretsFile, 'utf8'))
+    } catch { /* fall through to regenerate */ }
+  }
+  const secrets = {
+    JWT_SECRET:         crypto.randomBytes(64).toString('hex'),
+    JWT_REFRESH_SECRET: crypto.randomBytes(64).toString('hex'),
+  }
+  fs.mkdirSync(userDataPath, { recursive: true })
+  fs.writeFileSync(secretsFile, JSON.stringify(secrets), { mode: 0o600 })
+  return secrets
+}
 
 const IS_DEV   = !app.isPackaged
 const API_PORT = 4001
@@ -337,12 +357,14 @@ async function startServers() {
 
   if (!apiRunning) {
     log(`[app] Spawning API: ${nodeExe} server.js in ${apiDir}`)
+    const userDataPath = app.getPath('userData')
+    const secrets = getOrCreateSecrets(userDataPath)
     spawnServer(nodeExe, ['server.js'], apiDir, {
       DATABASE_URL:                dbUrl,
       // Point Prisma directly at the bundled native query engine
       PRISMA_QUERY_ENGINE_LIBRARY: prismaEngineLib,
-      JWT_SECRET:                  '***REMOVED***',
-      JWT_REFRESH_SECRET:          '***REMOVED***',
+      JWT_SECRET:                  secrets.JWT_SECRET,
+      JWT_REFRESH_SECRET:          secrets.JWT_REFRESH_SECRET,
       PORT:                        String(API_PORT),
       NODE_ENV:                    'production',
       CORS_ORIGIN:                 `http://localhost:${WEB_PORT}`,

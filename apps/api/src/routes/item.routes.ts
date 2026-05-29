@@ -17,7 +17,19 @@ import { validateRequest } from '../middleware/validateRequest'
 import { createItemSchema, updateItemSchema } from '../validators/item.validator'
 
 const router = Router()
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+
+const EXCEL_MIMES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+])
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (EXCEL_MIMES.has(file.mimetype)) return cb(null, true)
+    cb(new Error('Only Excel files (.xlsx, .xls) are allowed'))
+  },
+})
 
 router.use(verifyToken)
 

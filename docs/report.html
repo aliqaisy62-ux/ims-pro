@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تقرير تقني وتجاري شامل — IMS-Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f8f9fa;
+    color: #1a1a2e;
+    font-size: 13px;
+    line-height: 1.8;
+    direction: rtl;
+  }
+
+  /* ── Page ── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: white;
+    padding: 0;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 40%, #1a1a2e 100%);
+    min-height: 297mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.15);
+  }
+
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: rgba(16,185,129,0.1);
+  }
+
+  .cover-badge {
+    background: rgba(99,102,241,0.2);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #a5b4fc;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+  }
+
+  .cover-logo {
+    width: 90px; height: 90px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 28px;
+    font-size: 36px;
+    font-weight: 900;
+    color: white;
+    box-shadow: 0 20px 40px rgba(99,102,241,0.4);
+  }
+
+  .cover h1 {
+    color: white;
+    font-size: 42px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  .cover h2 {
+    color: #a5b4fc;
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 40px;
+  }
+
+  .cover-divider {
+    width: 80px; height: 3px;
+    background: linear-gradient(90deg, #6366f1, #10b981);
+    border-radius: 2px;
+    margin: 0 auto 40px;
+  }
+
+  .cover-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    max-width: 500px;
+    line-height: 2;
+    margin-bottom: 60px;
+  }
+
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cover-meta-item {
+    text-align: center;
+  }
+
+  .cover-meta-item .label {
+    color: #64748b;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .cover-meta-item .value {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .cover-footer {
+    position: absolute;
+    bottom: 30px;
+    color: #475569;
+    font-size: 11px;
+  }
+
+  /* ── Content Pages ── */
+  .content-page {
+    padding: 50px 50px 60px;
+    page-break-after: always;
+    position: relative;
+  }
+
+  .content-page:last-child { page-break-after: auto; }
+
+  /* ── Page Header ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 36px;
+  }
+
+  .page-header-brand {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .page-header-title {
+    font-size: 11px;
+    color: #6366f1;
+    font-weight: 600;
+  }
+
+  /* ── Section Headers ── */
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    margin-left: 12px;
+    flex-shrink: 0;
+  }
+
+  h2.section-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f3460;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h3.sub-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 22px 0 10px;
+    padding-right: 12px;
+    border-right: 3px solid #6366f1;
+  }
+
+  /* ── Cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .card-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #f8faff, #eef2ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .stat-card .num {
+    font-size: 32px;
+    font-weight: 900;
+    color: #4f46e5;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .label {
+    font-size: 11px;
+    color: #6366f1;
+    font-weight: 600;
+  }
+
+  .info-card {
+    background: #f8faff;
+    border: 1px solid #e0e7ff;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .info-card h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4f46e5;
+    margin-bottom: 8px;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    margin: 2px;
+  }
+
+  .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+  .badge-green  { background: #d1fae5; color: #065f46; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; }
+  .badge-amber  { background: #fef3c7; color: #92400e; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .badge-indigo { background: #e0e7ff; color: #3730a3; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12px;
+  }
+
+  th {
+    background: #0f3460;
+    color: white;
+    padding: 10px 14px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+  }
+
+  tr:nth-child(even) td { background: #f8faff; }
+  tr:hover td { background: #eef2ff; }
+
+  /* ── Lists ── */
+  .checklist {
+    list-style: none;
+    margin: 10px 0;
+  }
+
+  .checklist li {
+    padding: 5px 0;
+    padding-right: 22px;
+    position: relative;
+    color: #334155;
+    font-size: 12.5px;
+  }
+
+  .checklist li::before {
+    content: '✓';
+    position: absolute;
+    right: 0;
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  .dotlist {
+    list-style: none;
+    margin: 10px 0;
+  }
+
+  .dotlist li {
+    padding: 5px 0 5px 0;
+    padding-right: 18px;
+    position: relative;
+    color: #334155;
+    font-size: 12.5px;
+  }
+
+  .dotlist li::before {
+    content: '◆';
+    position: absolute;
+    right: 0;
+    color: #6366f1;
+    font-size: 8px;
+    top: 9px;
+  }
+
+  /* ── Callout boxes ── */
+  .callout {
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 14px 0;
+    border-right: 4px solid;
+  }
+
+  .callout-green  { background: #f0fdf4; border-color: #10b981; }
+  .callout-red    { background: #fff1f2; border-color: #f43f5e; }
+  .callout-blue   { background: #eff6ff; border-color: #3b82f6; }
+  .callout-amber  { background: #fffbeb; border-color: #f59e0b; }
+  .callout-purple { background: #faf5ff; border-color: #8b5cf6; }
+
+  .callout strong { font-weight: 700; display: block; margin-bottom: 4px; }
+  .callout p, .callout li { font-size: 12.5px; color: #374151; }
+
+  /* ── Tech Stack Badges ── */
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .tech-chip {
+    background: #1e1b4b;
+    color: #c7d2fe;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tech-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #818cf8;
+  }
+
+  /* ── Role Table ── */
+  .role-row td:first-child { font-weight: 700; }
+
+  /* ── Architecture Diagram ── */
+  .arch-box {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+    color: white;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .arch-layer .icon { font-size: 18px; }
+  .arch-layer .name { flex: 1; }
+  .arch-layer .tech { font-size: 10px; opacity: 0.7; }
+
+  .layer-1 { background: rgba(99,102,241,0.3); }
+  .layer-2 { background: rgba(16,185,129,0.3); }
+  .layer-3 { background: rgba(245,158,11,0.3); }
+  .layer-4 { background: rgba(239,68,68,0.3); }
+  .layer-5 { background: rgba(139,92,246,0.3); }
+
+  .arch-arrow {
+    text-align: center;
+    color: #475569;
+    font-size: 16px;
+    margin: -2px 0;
+  }
+
+  /* ── SWOT Grid ── */
+  .swot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .swot-box {
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .swot-box h4 {
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .swot-s { background: #f0fdf4; }
+  .swot-s h4 { color: #065f46; }
+  .swot-w { background: #fff1f2; }
+  .swot-w h4 { color: #991b1b; }
+  .swot-o { background: #eff6ff; }
+  .swot-o h4 { color: #1e40af; }
+  .swot-t { background: #fffbeb; }
+  .swot-t h4 { color: #92400e; }
+
+  .swot-box ul { list-style: none; padding: 0; }
+  .swot-box ul li {
+    font-size: 11.5px;
+    color: #374151;
+    padding: 3px 0;
+    padding-right: 14px;
+    position: relative;
+  }
+  .swot-box ul li::before {
+    content: '—';
+    position: absolute;
+    right: 0;
+    color: #9ca3af;
+  }
+
+  /* ── Roadmap ── */
+  .roadmap-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .roadmap-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .roadmap-done  { background: #d1fae5; }
+  .roadmap-inprogress { background: #dbeafe; }
+  .roadmap-future { background: #f1f5f9; }
+
+  .roadmap-content h5 { font-size: 12.5px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .roadmap-content p { font-size: 11.5px; color: #64748b; }
+
+  /* ── Page number footer ── */
+  .page-footer {
+    position: absolute;
+    bottom: 24px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+
+  .page-footer-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    margin: 0 50px 10px;
+  }
+
+  /* ── Highlight Box ── */
+  .highlight-box {
+    background: linear-gradient(135deg, #0f3460, #16213e);
+    color: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+
+  .highlight-box h4 { color: #a5b4fc; font-size: 12px; margin-bottom: 8px; }
+  .highlight-box p { font-size: 13px; line-height: 2; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; }
+    .content-page { padding: 40px 45px 55px; }
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  p { margin-bottom: 8px; color: #374151; font-size: 12.5px; }
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ COVER PAGE -->
+<div class="page cover">
+  <div class="cover-badge">تقرير تقني وتجاري شامل</div>
+  <div class="cover-logo">IMS</div>
+  <h1>IMS-Pro</h1>
+  <h2>نظام إدارة المخزون ونقطة البيع الاحترافي</h2>
+  <div class="cover-divider"></div>
+  <p class="cover-subtitle">
+    منصة متكاملة لإدارة المخزون والمبيعات مُصمَّمة خصيصاً للسوق العراقي،
+    تدعم ثنائية اللغة (عربي/إنجليزي) وثنائية العملة (دينار عراقي / دولار أمريكي)
+    مع واجهة ويب حديثة وبنية تقنية قابلة للتوسع.
+  </p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <span class="label">إصدار النظام</span>
+      <span class="value">v2.0 — 2026</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">السوق المستهدف</span>
+      <span class="value">العراق — التجزئة</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">نوع التقرير</span>
+      <span class="value">تقني وتجاري</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">تاريخ الإصدار</span>
+      <span class="value">مايو 2026</span>
+    </div>
+  </div>
+  <div class="cover-footer">IMS-Pro — Confidential Technical & Business Report — 2026</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 2: OVERVIEW -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">نظرة عامة على المشروع</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">١</span> نظرة عامة على المشروع</h2>
+
+  <p>
+    <strong>IMS-Pro</strong> (Inventory Management System Professional) هو نظام متكامل لإدارة المخزون ونقطة البيع، مُطوَّر خصيصاً لتلبية احتياجات قطاع التجزئة في السوق العراقي. يجمع النظام بين واجهة مستخدم حديثة ومتجاوبة وخلفية قوية قائمة على تقنيات الويب الأحدث، مع دعم كامل للغة العربية (RTL) والإنجليزية، وإدارة مزدوجة للعملات (دينار عراقي ودولار أمريكي).
+  </p>
+
+  <div class="card-grid">
+    <div class="stat-card">
+      <div class="num">١٧</div>
+      <div class="label">نموذج بيانات (Prisma Model)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">١٥</div>
+      <div class="label">مسار API (Route Handler)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">٤٤</div>
+      <div class="label">صفحة واجهة مستخدم</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">٦</div>
+      <div class="label">أدوار مستخدمين (RBAC)</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">٨</div>
+      <div class="label">أنواع تقارير</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">٢</div>
+      <div class="label">عملة مدعومة (IQD/USD)</div>
+    </div>
+  </div>
+
+  <h3 class="sub-title">الأهداف الرئيسية للمشروع</h3>
+  <ul class="checklist">
+    <li>توفير نقطة بيع (POS) سريعة وموثوقة تدعم مسح الباركود عبر أجهزة Bluetooth/USB</li>
+    <li>إدارة المخزون في الوقت الفعلي مع التزامن الفوري عند كل عملية بيع أو شراء</li>
+    <li>دعم متاجر التجزئة والجملة مع نظام أسعار متعدد المستويات (5 أنواع أسعار)</li>
+    <li>توفير تقارير مالية متكاملة بالدينار العراقي والدولار الأمريكي</li>
+    <li>نشر سهل على شبكة LAN المحلية باستخدام Docker مع إمكانية التوسع مستقبلاً</li>
+    <li>تطبيق Android مصاحب عبر Capacitor لدعم العمل المتنقل</li>
+  </ul>
+
+  <h3 class="sub-title">السياق التجاري</h3>
+  <p>
+    يستهدف النظام أصحاب المحلات التجارية والمستودعات في العراق الذين يحتاجون إلى حل شامل يعمل على شبكة LAN المحلية دون الاعتماد الكامل على الإنترنت، مع دعم واجهة عربية RTL كاملة وإدارة أسعار الصرف بشكل ديناميكي.
+  </p>
+
+  <div class="callout callout-blue">
+    <strong>💡 نقطة التميز الرئيسية</strong>
+    <p>يُعدّ IMS-Pro من النادرين في السوق العراقي الذي يوفر نظام POS ويب متكاملاً مع إدارة مخزون، دعم ثنائي للعملات، وتكامل مع تطبيق Android — كل ذلك في حل واحد مُستضاف محلياً.</p>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٢
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 3: FEATURES -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">الميزات الأساسية</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٢</span> الميزات والوظائف الأساسية</h2>
+
+  <h3 class="sub-title">🏪 نقطة البيع (POS System)</h3>
+  <ul class="checklist">
+    <li>مسح الباركود عبر ماسح Bluetooth/USB مع خوارزمية الفجوة الزمنية (200ms gap detection) لتمييز الضغطات المتتالية</li>
+    <li>أزرار سريعة لفئات العملة العراقية: 250 — 500 — 1,000 — 5,000 — 10,000 — 25,000 — 50,000 دينار</li>
+    <li>صوت إشعار عند المسح: beep عند النجاح، buzz عند عدم إيجاد المنتج</li>
+    <li>5 أنواع أسعار: تجزئة، جملة، خاص، دولار، دينار — تُطبَّق تلقائياً حسب نوع العميل</li>
+    <li>دفع نقدي أو آجل مع حساب الفكة تلقائياً</li>
+    <li>معالجة Serializable Transaction لمنع تضارب المخزون تحت الضغط العالي</li>
+    <li>ترقيم فواتير ذكي: INV-YYYYMMDD-XXXX</li>
+  </ul>
+
+  <h3 class="sub-title">📦 إدارة المخزون</h3>
+  <ul class="checklist">
+    <li>إضافة وتعديل وحذف ناعم (Soft Delete) للمنتجات مع دعم الباركود</li>
+    <li>تتبع تاريخ انتهاء الصلاحية على مستوى المنتج والفاتورة</li>
+    <li>تنبيهات المخزون المنخفض (minimum stock threshold)</li>
+    <li>تحويلات مخزون (IN/OUT) مع 5 أسباب مختلفة</li>
+    <li>استيراد كميات من Excel (.xlsx) مع التحقق من الصحة</li>
+    <li>Virtual Scroll لعرض آلاف المنتجات بأداء عالٍ</li>
+  </ul>
+
+  <div class="card-grid-2">
+    <div class="info-card">
+      <h4>📊 التقارير الثمانية</h4>
+      <ul class="dotlist">
+        <li>تقرير المبيعات (مع تصدير PDF/Excel)</li>
+        <li>تقرير المشتريات</li>
+        <li>تقرير الأرباح الصافية</li>
+        <li>تقرير الجرد الشامل</li>
+        <li>كشف حساب عميل</li>
+        <li>كشف حساب مورد</li>
+        <li>أكثر المنتجات مبيعاً (Top Sellers)</li>
+        <li>أوقات الذروة (Peak Hours — 24 ساعة)</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>🔐 وحدات المحاسبة</h4>
+      <ul class="dotlist">
+        <li>فواتير مبيعات (CASH/CREDIT + مرتجعات جزئية)</li>
+        <li>فواتير مشتريات مرتبطة بالموردين</li>
+        <li>إدارة مصاريف بالفئات</li>
+        <li>سندات قبض وصرف</li>
+        <li>كشف الصندوق اليومي (USD + IQD)</li>
+        <li>سجل أسعار الصرف التاريخية</li>
+        <li>AuditLog لتتبع كل الإجراءات</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub-title">🔐 نظام الصلاحيات (RBAC)</h3>
+  <table>
+    <tr>
+      <th>الدور</th>
+      <th>الصلاحيات</th>
+    </tr>
+    <tr class="role-row"><td>ADMIN — مدير النظام</td><td>صلاحية كاملة: إدارة المستخدمين، الإعدادات، السجل، قاعدة البيانات</td></tr>
+    <tr class="role-row"><td>MANAGER — مدير</td><td>كل شيء ما عدا إدارة المستخدمين وإعدادات النظام</td></tr>
+    <tr class="role-row"><td>CASHIER — كاشير</td><td>نقطة البيع، الفواتير، البحث عن العملاء، سندات القبض</td></tr>
+    <tr class="role-row"><td>ACCOUNTANT — محاسب</td><td>المصاريف، السندات، الموردين، التقارير، الصندوق</td></tr>
+    <tr class="role-row"><td>STAFF — موظف</td><td>المبيعات، العملاء، المنتجات (بدون تقارير أو إعدادات)</td></tr>
+    <tr class="role-row"><td>VIEWER — مستعرض</td><td>قراءة فقط: التقارير والمخزون</td></tr>
+  </table>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٣
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 4: TECH STACK -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">المواصفات التقنية</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٣</span> المواصفات التقنية</h2>
+
+  <h3 class="sub-title">🧱 البنية التحتية التقنية (Tech Stack)</h3>
+  <div class="tech-grid">
+    <div class="tech-chip"><span class="dot"></span>Next.js 14 (App Router)</div>
+    <div class="tech-chip"><span class="dot"></span>TypeScript 5.4</div>
+    <div class="tech-chip"><span class="dot"></span>Tailwind CSS 3.4</div>
+    <div class="tech-chip"><span class="dot"></span>shadcn/ui + Radix UI</div>
+    <div class="tech-chip"><span class="dot"></span>Recharts 2.12</div>
+    <div class="tech-chip"><span class="dot"></span>Express.js 4.19</div>
+    <div class="tech-chip"><span class="dot"></span>Node.js 24 LTS</div>
+    <div class="tech-chip"><span class="dot"></span>Prisma ORM 5.22</div>
+    <div class="tech-chip"><span class="dot"></span>PostgreSQL 15</div>
+    <div class="tech-chip"><span class="dot"></span>JWT + bcryptjs</div>
+    <div class="tech-chip"><span class="dot"></span>Docker + Nginx</div>
+    <div class="tech-chip"><span class="dot"></span>Capacitor 6 (Android)</div>
+    <div class="tech-chip"><span class="dot"></span>jsPDF + ExcelJS</div>
+    <div class="tech-chip"><span class="dot"></span>Zod Validation</div>
+    <div class="tech-chip"><span class="dot"></span>i18next (ar/en)</div>
+    <div class="tech-chip"><span class="dot"></span>html5-qrcode + QuaggaJS</div>
+    <div class="tech-chip"><span class="dot"></span>Zustand State</div>
+    <div class="tech-chip"><span class="dot"></span>Winston Logger</div>
+  </div>
+
+  <h3 class="sub-title">🏗️ البنية المعمارية (Architecture)</h3>
+  <div class="arch-box">
+    <div class="arch-layer layer-1">
+      <span class="icon">🖥️</span>
+      <span class="name">طبقة العرض (Presentation Layer)</span>
+      <span class="tech">Next.js 14 App Router + Tailwind CSS + shadcn/ui — Port 3001</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer layer-2">
+      <span class="icon">⚙️</span>
+      <span class="name">طبقة API (Business Logic Layer)</span>
+      <span class="tech">Express.js REST API — 15 Routes — Port 4001 — Winston Logs</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer layer-3">
+      <span class="icon">🗄️</span>
+      <span class="name">طبقة البيانات (Data Layer)</span>
+      <span class="tech">Prisma ORM — PostgreSQL 15 — 17 Models — Port 5434</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer layer-4">
+      <span class="icon">🔐</span>
+      <span class="name">طبقة الأمان (Security Layer)</span>
+      <span class="tech">JWT (15min) + Refresh Cookie (7d) + RBAC + Helmet + Rate Limiting</span>
+    </div>
+    <div class="arch-arrow">↕</div>
+    <div class="arch-layer layer-5">
+      <span class="icon">🐳</span>
+      <span class="name">طبقة النشر (Deployment Layer)</span>
+      <span class="tech">Docker Compose — Nginx Reverse Proxy — LAN + Android (Capacitor)</span>
+    </div>
+  </div>
+
+  <h3 class="sub-title">🗄️ نماذج قاعدة البيانات (17 Model)</h3>
+  <table>
+    <tr>
+      <th>النموذج</th>
+      <th>الحقول الرئيسية</th>
+      <th>العلاقات</th>
+    </tr>
+    <tr><td>User</td><td>username، passwordHash، role، language، isActive</td><td>SalesInvoice, AuditLog</td></tr>
+    <tr><td>Item</td><td>barcode، name_ar/en، 6 أسعار، stockQty، expiryDate</td><td>Category, SalesInvoiceItem</td></tr>
+    <tr><td>SalesInvoice</td><td>invoiceNumber، type(CASH/CREDIT)، currency، total</td><td>Customer, SalesInvoiceItem</td></tr>
+    <tr><td>Customer</td><td>name، phone، type(RETAIL/WHOLESALE)، creditLimit</td><td>SalesInvoice, PaymentVoucher</td></tr>
+    <tr><td>Supplier</td><td>name، phone، balance، currency</td><td>PurchaseInvoice</td></tr>
+    <tr><td>AuditLog</td><td>action، entity، entityId، ipAddress</td><td>User</td></tr>
+    <tr><td>CashStatement</td><td>openingBalance، closingBalance (USD+IQD)</td><td>—</td></tr>
+    <tr><td>ExchangeRateHistory</td><td>rateIQD، changedById، createdAt</td><td>User</td></tr>
+  </table>
+
+  <div class="callout callout-purple">
+    <strong>⚡ نقطة تقنية مهمة — أمان المعاملات</strong>
+    <p>يستخدم نظام POS <code>Serializable Transaction Isolation Level</code> في Prisma لضمان عدم تضارب المخزون عند تنفيذ عمليات بيع متزامنة، مما يجعله قادراً على التعامل مع بيئات متعددة الكاشيرين دون أي خطأ في المخزون.</p>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٤
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 5: STRENGTHS -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">نقاط القوة</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٤</span> نقاط القوة (Strengths)</h2>
+
+  <div class="callout callout-green">
+    <strong>✅ واجهة POS عالية الأداء</strong>
+    <p>مُصمَّمة للعمل بسرعة في بيئات البيع بالتجزئة المكثفة — مسح الباركود بتأخير 200ms فقط، أزرار فئات العملة IQD للدفع الفوري، وعرض الفكة فورياً. الواجهة تعمل بالكامل في المتصفح بدون تطبيق منفصل.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ دعم الباركود المتعدد المصادر</strong>
+    <p>يدعم النظام ثلاثة مصادر للباركود في آنٍ واحد: ماسح Bluetooth/USB بتقنية Keyboard Wedge مع كشف الفجوة الزمنية (200ms gap)، كاميرا الجهاز عبر html5-qrcode، وإدخال يدوي. هذه المرونة نادرة في حلول POS المحلية.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ نظام أسعار متعدد المستويات</strong>
+    <p>خمسة أنواع أسعار مستقلة لكل منتج (تجزئة، جملة، خاص، دولار، دينار) تُطبَّق تلقائياً حسب نوع العميل، مما يُغني عن إدارة قوائم أسعار منفصلة وهو متطلب شائع في السوق العراقي.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ بيئة Docker محكمة ومقاومة للأعطال</strong>
+    <p>كل خدمة معزولة في Container مستقل مع Health Checks تلقائية، وإعادة تشغيل عند الفشل، وحد ذاكرة (512MB لكل خدمة). نقطة الصيانة الذكية (db-push) تُعالج فشل الهجرات تلقائياً دون تدخل بشري.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ ثنائية العملة مضمونة بالبنية</strong>
+    <p>كل قيمة مالية مُخزَّنة مع رمز عملتها وسعر الصرف وقت المعاملة — لا إعادة حساب تراجعية أبداً. هذا يضمن دقة التقارير المالية بغض النظر عن تغيرات سعر الصرف مستقبلاً.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ سجل التدقيق الأمني (AuditLog)</strong>
+    <p>كل إجراء حساس (تسجيل دخول/خروج، إنشاء/تعديل/حذف المنتجات والفواتير) يُسجَّل تلقائياً مع IP العميل والمستخدم والوقت — متطلب أمني أساسي للبيئات التجارية.</p>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>✅ تقارير ذكية — Top Sellers & Peak Hours</strong>
+    <p>تقرير أوقات الذروة يحلل توزيع المبيعات على 24 ساعة باستخدام PostgreSQL <code>EXTRACT(HOUR)</code> مع zero-fill للساعات الخاملة، مما يتيح لصاحب المحل جدولة الموظفين بشكل أمثل.</p>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٥
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 6: WEAKNESSES -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">نقاط الضعف والتحسينات</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٥</span> نقاط الضعف والتحسينات المقترحة</h2>
+
+  <div class="callout callout-red">
+    <strong>⚠️ الاعتماد على عنوان IP المحلي</strong>
+    <p>حالياً يحتاج العملاء على الشبكة إلى معرفة IP المحلي للخادم (10.110.210.134). أي تغيير في IP يستلزم تحديث إعدادات جميع الأجهزة. <strong>الحل المقترح:</strong> استخدام mDNS (Avahi/Bonjour) للوصول عبر اسم ثابت مثل <code>ims-pro.local</code>.</p>
+  </div>
+
+  <div class="callout callout-red">
+    <strong>⚠️ غياب وضع العمل دون إنترنت (Offline Mode)</strong>
+    <p>النظام يتطلب اتصالاً بالشبكة المحلية بشكل مستمر. انقطاع الشبكة يُوقف العمليات. <strong>الحل المقترح:</strong> تطبيق PWA مع Service Worker + IndexedDB للعمل المؤقت دون اتصال، مع مزامنة فور عودة الاتصال.</p>
+  </div>
+
+  <div class="callout callout-red">
+    <strong>⚠️ تقارير بدون رسوم بيانية مُتقدمة</strong>
+    <p>تقارير المبيعات والمشتريات تعتمد على جداول بيانات فقط، بدون تصورات بيانية تفاعلية. <strong>الحل المقترح:</strong> إضافة Recharts في صفحات التقارير الرئيسية (خط زمني يومي/أسبوعي/شهري).</p>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>⚠️ غياب النسخ الاحتياطي التلقائي</strong>
+    <p>لا توجد آلية تلقائية لنسخ قاعدة البيانات احتياطياً. فقدان Docker Volume يعني فقدان البيانات. <strong>الحل المقترح:</strong> Cron Job يومي ينفذ <code>pg_dump</code> ويرفع النتيجة إلى Google Drive أو S3.</p>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>⚠️ لا يوجد دعم للفروع المتعددة</strong>
+    <p>النظام مُصمَّم لفرع واحد. الشركات متعددة الفروع تحتاج إلى طبقة إضافية للتجميع. <strong>الحل المقترح:</strong> إضافة حقل <code>branchId</code> في نماذج المعاملات مع لوحة تحكم مركزية.</p>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>⚠️ إمكانية إضافة تنبؤ المخزون بالذكاء الاصطناعي</strong>
+    <p>البيانات التاريخية المتراكمة (مبيعات، موسمية، أوقات ذروة) تُشكّل أساساً ممتازاً لنموذج توقع. <strong>الفرصة:</strong> استخدام Claude API لتحليل أنماط المبيعات وتوصية بكميات الطلب المثلى.</p>
+  </div>
+
+  <div class="callout callout-amber">
+    <strong>⚠️ غياب تكامل WhatsApp/SMS للفواتير</strong>
+    <p>إرسال الفاتورة للعميل يتطلب طباعة ورقية. <strong>الفرصة:</strong> تكامل مع WhatsApp Business API لإرسال الفاتورة كـ PDF مباشرة للعميل عبر رقم هاتفه.</p>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٦
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 7: SWOT + ROADMAP -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">تحليل SWOT وخارطة الطريق</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٦</span> تحليل SWOT</h2>
+
+  <div class="swot-grid">
+    <div class="swot-box swot-s">
+      <h4>💪 نقاط القوة (Strengths)</h4>
+      <ul>
+        <li>POS مخصص للسوق العراقي (IQD + USD)</li>
+        <li>5 مستويات أسعار مدمجة</li>
+        <li>دعم الباركود بثلاثة مصادر</li>
+        <li>AuditLog أمني متكامل</li>
+        <li>Docker بدون تعقيدات النشر</li>
+        <li>كود TypeScript بالكامل (type-safe)</li>
+        <li>Serializable transactions للبيع</li>
+        <li>تقارير Top Sellers + Peak Hours</li>
+      </ul>
+    </div>
+    <div class="swot-box swot-w">
+      <h4>⚠️ نقاط الضعف (Weaknesses)</h4>
+      <ul>
+        <li>لا Offline Mode حالياً</li>
+        <li>IP محلي ثابت مطلوب</li>
+        <li>لا نسخ احتياطي تلقائي</li>
+        <li>فرع واحد فقط</li>
+        <li>لا تنبيهات Push Notifications</li>
+        <li>اعتماد على LAN بالكامل</li>
+      </ul>
+    </div>
+    <div class="swot-box swot-o">
+      <h4>🚀 الفرص (Opportunities)</h4>
+      <ul>
+        <li>سوق ERP عراقي ناشئ ومحدود الحلول</li>
+        <li>تكامل AI لتوقع المخزون</li>
+        <li>تطبيق Android جاهز للتوسع</li>
+        <li>تكامل WhatsApp للفواتير</li>
+        <li>نسخة SaaS متعددة المستأجرين</li>
+        <li>إضافة نقاط ولاء للعملاء</li>
+      </ul>
+    </div>
+    <div class="swot-box swot-t">
+      <h4>⚡ التهديدات (Threats)</h4>
+      <ul>
+        <li>منافسة من حلول POS عالمية منخفضة التكلفة</li>
+        <li>عدم استقرار الكهرباء/الإنترنت في العراق</li>
+        <li>حاجز التبني لدى التجار التقليديين</li>
+        <li>تحديات دعم اللغة العربية في المكتبات</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="section-title" style="margin-top:28px"><span class="section-number">٧</span> خارطة الطريق المستقبلية</h2>
+
+  <div class="roadmap-item">
+    <div class="roadmap-dot roadmap-done">✅</div>
+    <div class="roadmap-content">
+      <h5>المرحلة الأولى — النظام الأساسي (مكتملة)</h5>
+      <p>POS كامل، إدارة مخزون، تقارير، محاسبة مزدوجة العملة، AuditLog، Docker</p>
+    </div>
+  </div>
+  <div class="roadmap-item">
+    <div class="roadmap-dot roadmap-inprogress">🔄</div>
+    <div class="roadmap-content">
+      <h5>المرحلة الثانية — Mobile & Offline</h5>
+      <p>إطلاق APK Android عبر Capacitor، PWA Offline مع Service Worker + IndexedDB</p>
+    </div>
+  </div>
+  <div class="roadmap-item">
+    <div class="roadmap-dot roadmap-future">🔮</div>
+    <div class="roadmap-content">
+      <h5>المرحلة الثالثة — Cloud & AI</h5>
+      <p>نسخ احتياطي تلقائي إلى Google Drive، تنبؤ المخزون بالذكاء الاصطناعي، تكامل WhatsApp</p>
+    </div>
+  </div>
+  <div class="roadmap-item">
+    <div class="roadmap-dot roadmap-future">🌐</div>
+    <div class="roadmap-content">
+      <h5>المرحلة الرابعة — Multi-Branch SaaS</h5>
+      <p>دعم الفروع المتعددة، نقاط الولاء، لوحة تحكم مركزية، نسخة SaaS</p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٧
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE 8: DEPLOYMENT + CONCLUSION -->
+<div class="page content-page">
+  <div class="page-header">
+    <span class="page-header-brand">IMS-PRO</span>
+    <span class="page-header-title">النشر والخلاصة</span>
+  </div>
+
+  <h2 class="section-title"><span class="section-number">٨</span> بيئة النشر والإعداد</h2>
+
+  <table>
+    <tr>
+      <th>الخدمة</th>
+      <th>التقنية</th>
+      <th>المنفذ</th>
+      <th>الحالة</th>
+    </tr>
+    <tr>
+      <td>Web Frontend</td>
+      <td>Next.js 14 (Docker Container)</td>
+      <td>3001 / 3002</td>
+      <td><span class="badge badge-green">✓ يعمل</span></td>
+    </tr>
+    <tr>
+      <td>REST API</td>
+      <td>Express.js (Docker Container)</td>
+      <td>4000 / 4001</td>
+      <td><span class="badge badge-green">✓ يعمل</span></td>
+    </tr>
+    <tr>
+      <td>Database</td>
+      <td>PostgreSQL 15 (Docker Container)</td>
+      <td>5434</td>
+      <td><span class="badge badge-green">✓ يعمل</span></td>
+    </tr>
+    <tr>
+      <td>Reverse Proxy</td>
+      <td>Nginx Alpine (Docker Container)</td>
+      <td>80</td>
+      <td><span class="badge badge-green">✓ يعمل</span></td>
+    </tr>
+    <tr>
+      <td>Mobile App</td>
+      <td>Capacitor 6 + Android (com.etana.app)</td>
+      <td>—</td>
+      <td><span class="badge badge-amber">⏳ قيد البناء</span></td>
+    </tr>
+  </table>
+
+  <h3 class="sub-title">🔧 الأمان والأداء</h3>
+  <div class="card-grid-2">
+    <div class="info-card">
+      <h4>🔐 طبقات الأمان</h4>
+      <ul class="dotlist">
+        <li>JWT Access Token (15 دقيقة)</li>
+        <li>HttpOnly Refresh Cookie (7 أيام)</li>
+        <li>Rate Limiting: 500 طلب/15 دقيقة عام</li>
+        <li>Rate Limiting: 5 محاولات تسجيل دخول/15 دقيقة</li>
+        <li>Helmet.js Security Headers</li>
+        <li>CORS مُهيَّأ بقائمة IP مسموح بها</li>
+        <li>Nginx Rate Zone (login + api)</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>⚡ تحسينات الأداء</h4>
+      <ul class="dotlist">
+        <li>Virtual Scroll لقوائم المنتجات الكبيرة</li>
+        <li>Infinite Scroll في صفحة المنتجات</li>
+        <li>Skeleton Screens على جميع صفحات التحميل</li>
+        <li>Page Transitions (200ms)</li>
+        <li>Gzip Compression عبر Nginx</li>
+        <li>Static Assets Cache 7 أيام (Nginx)</li>
+        <li>PostgreSQL Indexes على جميع الحقول الحرجة</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2 class="section-title"><span class="section-number">٩</span> الخلاصة التنفيذية</h2>
+
+  <div class="highlight-box">
+    <h4>ملخص تنفيذي</h4>
+    <p>
+      يُمثّل <strong>IMS-Pro</strong> حلاً تقنياً متكاملاً ومُصمَّماً بعناية للسوق العراقي، يجمع بين متانة البنية التحتية (Docker + PostgreSQL + Prisma)، ومرونة الواجهة (Next.js 14 + Tailwind)، وخصوصية السوق المحلية (ثنائية العملة، الباركود، اللغة العربية RTL). مع 17 نموذج بيانات، 15 مسار API، و44 صفحة واجهة مستخدم، يُغطي النظام دورة العمل التجاري بالكامل من الشراء إلى البيع إلى التقارير المالية.
+    </p>
+  </div>
+
+  <p>
+    يتميز النظام بنضجه التقني والأمني (AuditLog، Serializable Transactions، RBAC متعدد الأدوار)، مما يجعله جاهزاً للبيئات التجارية الحقيقية. فرص التوسع واضحة ومحددة: Offline Mode، نسخ احتياطي سحابي، دعم الفروع، وتكامل الذكاء الاصطناعي — كل ذلك يضع IMS-Pro في موقع تنافسي قوي في سوق ERP/POS العراقي الناشئ.
+  </p>
+
+  <div class="callout callout-blue">
+    <strong>📌 التوصية</strong>
+    <p>
+      الأولوية القصوى في المرحلة التالية هي إطلاق تطبيق Android (APK جاهز via Capacitor) وتطبيق Offline Mode المحدود — هذان التحسينان وحدهما يرفعان قيمة المنتج بشكل كبير ويُعالجان أبرز نقطة ضعف في البيئة العراقية (انقطاع الكهرباء والشبكة).
+    </p>
+  </div>
+
+  <div class="page-footer">
+    <div class="page-footer-line"></div>
+    IMS-Pro Technical &amp; Business Report 2026 — صفحة ٨ — وثيقة سرية
+  </div>
+</div>
+
+</body>
+</html>

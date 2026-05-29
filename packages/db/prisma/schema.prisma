@@ -10,15 +10,21 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  username     String   @unique
-  passwordHash String
-  role         String   @default("CASHIER")
-  language     String   @default("ar")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  username           String    @unique
+  passwordHash       String
+  role               String    @default("CASHIER")
+  language           String    @default("ar")
+  isActive           Boolean   @default(true)
+  tokenVersion       Int       @default(0)
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime?
+  passwordChangedAt  DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   salesInvoices       SalesInvoice[]
   purchaseInvoices    PurchaseInvoice[]
@@ -27,6 +33,7 @@ model User {
   paymentVouchers     PaymentVoucher[]
   exchangeRateHistory ExchangeRateHistory[]
   auditLogs           AuditLog[]
+  refreshSessions     RefreshSession[]
 
   @@index([username])
   @@index([isActive])
@@ -348,4 +355,22 @@ model AuditLog {
   @@index([action])
   @@index([entity])
   @@index([createdAt])
+}
+
+model RefreshSession {
+  id              String    @id @default(cuid())
+  userId          String
+  tokenHash       String    @unique
+  userAgent       String?
+  ipAddress       String?
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  replacedByToken String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
 }
