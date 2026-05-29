@@ -3,7 +3,22 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+const DEMO_USERNAMES = ['manager1', 'cashier1']
+
+async function deleteDemoAccounts() {
+  const deleted = await prisma.user.deleteMany({
+    where: { username: { in: DEMO_USERNAMES } },
+  })
+  if (deleted.count > 0) {
+    console.log(`🗑️  Production: removed ${deleted.count} demo account(s): ${DEMO_USERNAMES.join(', ')}`)
+  }
+}
+
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    await deleteDemoAccounts()
+  }
+
   const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin'
   const adminPassword = process.env.SEED_ADMIN_PASSWORD
 
