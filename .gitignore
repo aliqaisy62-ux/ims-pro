@@ -69,6 +69,9 @@ apps/desktop/assets/seed.db
 *.png
 screenshot.js
 debug.js
+cookies.txt
+*.json.bak
+login_response.json
 
 .vercel
 
