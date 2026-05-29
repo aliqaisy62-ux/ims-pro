@@ -84,6 +84,9 @@ export async function cancelInvoiceHandler(req: Request, res: Response) {
     if (msg === 'ALREADY_CANCELLED') {
       return res.status(400).json({ success: false, message: 'الفاتورة ملغاة مسبقاً' })
     }
+    if (msg.startsWith('INSUFFICIENT_STOCK_TO_REVERSE:')) {
+      return res.status(409).json({ success: false, message: 'لا يمكن إلغاء الفاتورة — الكمية المشتراة تم بيعها أو تحويلها بالفعل' })
+    }
     res.status(500).json({ success: false, message: 'فشل في إلغاء الفاتورة' })
   }
 }

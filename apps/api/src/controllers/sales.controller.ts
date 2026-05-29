@@ -57,13 +57,23 @@ export async function createInvoice(req: Request, res: Response) {
     if (msg === 'CREDIT_REQUIRES_CUSTOMER') {
       return res.status(400).json({ success: false, error: 'الفاتورة الآجلة تتطلب تحديد عميل' })
     }
+    if (msg === 'NEGATIVE_TOTAL') {
+      return res.status(400).json({ success: false, error: 'إجمالي الفاتورة لا يمكن أن يكون سالباً' })
+    }
     res.status(500).json({ success: false, error: msg })
   }
 }
 
 export async function confirmInvoiceHandler(req: Request, res: Response) {
   try {
-    const amountPaid = req.body?.amountPaid != null ? Number(req.body.amountPaid) : undefined
+    let amountPaid: number | undefined
+    if (req.body?.amountPaid != null) {
+      const n = Number(req.body.amountPaid)
+      if (!Number.isFinite(n) || n < 0) {
+        return res.status(400).json({ success: false, error: 'قيمة المبلغ المدفوع غير صالحة' })
+      }
+      amountPaid = n
+    }
     const invoice = await confirmInvoice(req.params.id, req.user!.id, amountPaid)
     res.json({ success: true, data: invoice })
   } catch (error: unknown) {
@@ -73,6 +83,9 @@ export async function confirmInvoiceHandler(req: Request, res: Response) {
     }
     if (msg === 'INVOICE_NOT_DRAFT') {
       return res.status(400).json({ success: false, error: 'لا يمكن تأكيد فاتورة ليست في حالة مسودة' })
+    }
+    if (msg === 'INVALID_AMOUNT_PAID') {
+      return res.status(400).json({ success: false, error: 'قيمة المبلغ المدفوع غير صالحة' })
     }
     if (msg.startsWith('INSUFFICIENT_STOCK:')) {
       const parts = msg.split(':')

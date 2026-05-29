@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client'
+import { Decimal } from '@prisma/client/runtime/library'
 import { CreatePurchaseInvoiceInput } from '../validators/purchase.validator'
 
 const prisma = new PrismaClient()
@@ -95,14 +96,16 @@ export async function createPurchaseInvoice(
   userId: string
 ) {
   const lines = data.items.map((line) => {
-    const lineSubtotal = line.quantity * line.unitCost
-    const lineTotal = lineSubtotal - lineSubtotal * (line.discount / 100)
-    return { ...line, subtotal: lineTotal }
+    const qty = new Decimal(line.quantity)
+    const cost = new Decimal(line.unitCost)
+    const discountFactor = new Decimal(1).minus(new Decimal(line.discount ?? 0).div(100))
+    return { ...line, quantity: qty, unitCost: cost, subtotal: qty.mul(cost).mul(discountFactor) }
   })
 
-  const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
-  const invoiceDiscountAmount = subtotal * (data.discount / 100)
-  const total = subtotal - invoiceDiscountAmount
+  const subtotal = lines.reduce((sum, l) => sum.plus(l.subtotal), new Decimal(0))
+  const invoiceDiscountFactor = new Decimal(1).minus(new Decimal(data.discount ?? 0).div(100))
+  const total = subtotal.mul(invoiceDiscountFactor)
+  const invoiceDiscountAmount = subtotal.minus(total)
 
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
@@ -113,20 +116,20 @@ export async function createPurchaseInvoice(
             invoiceNumber,
             supplierId: data.supplierId,
             currency: data.currency,
-            exchangeRate: new Prisma.Decimal(data.exchangeRate),
-            subtotal: new Prisma.Decimal(subtotal),
-            discount: new Prisma.Decimal(invoiceDiscountAmount),
-            total: new Prisma.Decimal(total),
+            exchangeRate: new Decimal(data.exchangeRate),
+            subtotal,
+            discount: invoiceDiscountAmount,
+            total,
             notes: data.notes ?? null,
             status: 'DRAFT',
             createdById: userId,
             items: {
               create: lines.map((line) => ({
                 itemId: line.itemId,
-                quantity: new Prisma.Decimal(line.quantity),
-                unitCost: new Prisma.Decimal(line.unitCost),
+                quantity: line.quantity,
+                unitCost: line.unitCost,
                 currency: data.currency,
-                subtotal: new Prisma.Decimal(line.subtotal),
+                subtotal: line.subtotal,
                 expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
               })),
             },
@@ -188,8 +191,8 @@ export async function confirmInvoice(invoiceId: string, userId: string) {
         await tx.item.update({
           where: { id: line.itemId },
           data: {
-            stockQty: new Prisma.Decimal(oldQty + newQty),
-            costPrice: new Prisma.Decimal(avgCost),
+            stockQty: new Decimal(oldQty + newQty),
+            costPrice: new Decimal(avgCost),
           },
         })
 
@@ -220,7 +223,7 @@ export async function confirmInvoice(invoiceId: string, userId: string) {
         data: {
           status: 'CONFIRMED',
           balance: invoice.total,
-          amountPaid: new Prisma.Decimal(0),
+          amountPaid: new Decimal(0),
         },
       })
     },
@@ -250,20 +253,19 @@ export async function cancelInvoice(invoiceId: string, userId: string) {
   await prisma.$transaction(
     async (tx) => {
       if (wasConfirmed) {
-        // Reverse stock changes
+        // Reverse stock changes — reject if cancellation would take stock negative
         for (const line of invoice.items) {
           const dbItem = await tx.item.findUnique({ where: { id: line.itemId } })
           if (!dbItem) continue
 
-          const currentQty = Number(dbItem.stockQty)
-          const reversedQty = Number(line.quantity)
-          const newQty = Math.max(0, currentQty - reversedQty)
+          if (dbItem.stockQty.lessThan(line.quantity)) {
+            throw new Error(`INSUFFICIENT_STOCK_TO_REVERSE:${line.itemId}`)
+          }
 
           await tx.item.update({
             where: { id: line.itemId },
             data: {
-              stockQty: new Prisma.Decimal(newQty),
-              // Best effort: do not undo weighted average cost
+              stockQty: dbItem.stockQty.minus(line.quantity),
             },
           })
 

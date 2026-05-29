@@ -159,14 +159,15 @@ model SalesInvoice {
 }
 
 model SalesInvoiceItem {
-  id         String    @id @default(cuid())
-  invoiceId  String
-  itemId     String
-  quantity   Decimal
-  unitPrice  Decimal
-  currency   String    @default("IQD")
-  subtotal   Decimal
-  expiryDate DateTime?
+  id          String    @id @default(cuid())
+  invoiceId   String
+  itemId      String
+  quantity    Decimal
+  returnedQty Decimal   @default(0)
+  unitPrice   Decimal
+  currency    String    @default("IQD")
+  subtotal    Decimal
+  expiryDate  DateTime?
 
   invoice SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   item    Item         @relation(fields: [itemId], references: [id])

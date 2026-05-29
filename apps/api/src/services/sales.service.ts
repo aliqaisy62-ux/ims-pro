@@ -105,6 +105,7 @@ export async function createSalesInvoice(data: CreateSalesInvoiceInput, userId: 
 
   const subtotal = lineData.reduce((acc, l) => acc.plus(l.subtotal), new Decimal(0))
   const total = subtotal.mul(new Decimal(1).minus(invoiceDiscountPct.div(100)))
+  if (total.lessThan(0)) throw new Error('NEGATIVE_TOTAL')
 
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
@@ -168,6 +169,9 @@ export async function confirmInvoice(invoiceId: string, userId: string, amountPa
     const err = new Error('INVOICE_NOT_DRAFT')
     ;(err as Error & { statusCode: number }).statusCode = 400
     throw err
+  }
+  if (amountPaid !== undefined && (!Number.isFinite(amountPaid) || amountPaid < 0)) {
+    throw new Error('INVALID_AMOUNT_PAID')
   }
 
   await prisma.$transaction(async (tx) => {
@@ -289,7 +293,9 @@ export async function partialReturnInvoice(
     const invLine = invoice.items.find((l) => l.itemId === ri.itemId)
     if (!invLine) throw new Error(`ITEM_NOT_IN_INVOICE:${ri.itemId}`)
     if (ri.quantity <= 0) throw new Error(`INVALID_QUANTITY:${ri.itemId}`)
-    if (ri.quantity > Number(invLine.quantity)) throw new Error(`RETURN_QTY_EXCEEDS_SOLD:${ri.itemId}`)
+    const alreadyReturned = Number(invLine.returnedQty ?? 0)
+    const remainingReturnable = Number(invLine.quantity) - alreadyReturned
+    if (ri.quantity > remainingReturnable) throw new Error(`RETURN_QTY_EXCEEDS_SOLD:${ri.itemId}`)
   }
 
   let returnTotal = new Decimal(0)
@@ -298,16 +304,22 @@ export async function partialReturnInvoice(
     returnTotal = returnTotal.plus(new Decimal(ri.quantity).mul(new Decimal(invLine.unitPrice.toString())))
   }
 
-  const isFullReturn =
-    returnItems.length === invoice.items.length &&
-    returnItems.every((ri) => {
-      const invLine = invoice.items.find((l) => l.itemId === ri.itemId)!
-      return ri.quantity >= Number(invLine.quantity)
-    })
+  // Full return when every invoice line will have returnedQty >= soldQty after this batch
+  const isFullReturn = invoice.items.every((invLine) => {
+    const ri = returnItems.find((r) => r.itemId === invLine.itemId)
+    const alreadyReturned = Number(invLine.returnedQty ?? 0)
+    const soldQty = Number(invLine.quantity)
+    return ri ? alreadyReturned + ri.quantity >= soldQty : alreadyReturned >= soldQty
+  })
 
   await prisma.$transaction(
     async (tx) => {
       for (const ri of returnItems) {
+        const invLine = invoice.items.find((l) => l.itemId === ri.itemId)!
+        await tx.salesInvoiceItem.update({
+          where: { id: invLine.id },
+          data: { returnedQty: { increment: ri.quantity } },
+        })
         await tx.item.update({
           where: { id: ri.itemId },
           data: { stockQty: { increment: ri.quantity } },
