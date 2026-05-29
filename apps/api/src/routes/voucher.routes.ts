@@ -1,13 +1,14 @@
 import { Router } from 'express'
-import { verifyToken } from '../middleware/auth'
-import { requireRole } from '../middleware/requireRole'
+import { verifyToken, requireFullAccess } from '../middleware/auth'
+import { requirePermission, Permission } from '../middleware/requirePermission'
 import { listVouchers, getVoucher, createVoucherHandler } from '../controllers/voucher.controller'
 
 const router = Router()
 router.use(verifyToken)
+router.use(requireFullAccess)
 
-router.get('/', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), listVouchers)
-router.post('/', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), createVoucherHandler)
-router.get('/:id', requireRole('ADMIN', 'MANAGER', 'ACCOUNTANT'), getVoucher)
+router.get('/',    requirePermission(Permission.VOUCHERS_VIEW),   listVouchers)
+router.get('/:id', requirePermission(Permission.VOUCHERS_VIEW),   getVoucher)
+router.post('/',   requirePermission(Permission.VOUCHERS_CREATE),  createVoucherHandler)
 
 export default router

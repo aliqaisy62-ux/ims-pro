@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { verifyToken } from '../middleware/auth'
-import { requireRole } from '../middleware/requireRole'
+import { verifyToken, requireFullAccess } from '../middleware/auth'
+import { requirePermission, Permission } from '../middleware/requirePermission'
 import {
   listInvoices,
   getInvoice,
@@ -10,13 +10,13 @@ import {
 } from '../controllers/purchase.controller'
 
 const router = Router()
-
 router.use(verifyToken)
+router.use(requireFullAccess)
 
-router.get('/', listInvoices)
-router.post('/', requireRole('MANAGER', 'ADMIN'), createInvoice)
-router.get('/:id', getInvoice)
-router.post('/:id/confirm', requireRole('MANAGER', 'ADMIN'), confirmInvoiceHandler)
-router.post('/:id/cancel', requireRole('MANAGER', 'ADMIN'), cancelInvoiceHandler)
+router.get('/',           requirePermission(Permission.PURCHASES_VIEW),   listInvoices)
+router.get('/:id',        requirePermission(Permission.PURCHASES_VIEW),   getInvoice)
+router.post('/',          requirePermission(Permission.PURCHASES_CREATE),  createInvoice)
+router.post('/:id/confirm', requirePermission(Permission.PURCHASES_MANAGE), confirmInvoiceHandler)
+router.post('/:id/cancel',  requirePermission(Permission.PURCHASES_MANAGE), cancelInvoiceHandler)
 
 export default router

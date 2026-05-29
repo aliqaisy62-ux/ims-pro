@@ -417,10 +417,17 @@ async function createMainWindow() {
 
   Menu.setApplicationMenu(null)
 
-  // Ctrl+Shift+I toggles DevTools in dev and production
-  globalShortcut.register('CommandOrControl+Shift+I', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.toggleDevTools()
-  })
+  if (IS_DEV) {
+    // DevTools only available in development
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.toggleDevTools()
+    })
+  } else {
+    // Production: close DevTools immediately if opened by any means
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools()
+    })
+  }
 
   await mainWindow.loadURL(`http://127.0.0.1:${WEB_PORT}`)
 

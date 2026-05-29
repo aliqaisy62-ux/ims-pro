@@ -45,6 +45,8 @@ export interface AuthUser {
   name: string
   role: UserRole
   language: Language
+  tokenVersion: number
+  restricted?: boolean   // true when mustChangePassword — limits access to /auth/change-password only
 }
 
 export interface LoginRequest {

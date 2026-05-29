@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { verifyToken } from '../middleware/auth'
-import { requireRole } from '../middleware/requireRole'
+import { verifyToken, requireFullAccess } from '../middleware/auth'
+import { requirePermission, Permission } from '../middleware/requirePermission'
 import {
   listInvoices,
   getInvoice,
@@ -13,13 +13,14 @@ import {
 
 const router = Router()
 router.use(verifyToken)
+router.use(requireFullAccess)
 
-router.get('/', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), listInvoices)
-router.post('/', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), createInvoice)
-router.get('/:id', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), getInvoice)
-router.post('/:id/confirm', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), confirmInvoiceHandler)
-router.post('/:id/cancel', requireRole('ADMIN', 'MANAGER'), cancelInvoiceHandler)
-router.post('/:id/return', requireRole('ADMIN', 'MANAGER'), returnInvoiceHandler)
-router.post('/:id/partial-return', requireRole('ADMIN', 'MANAGER', 'CASHIER', 'STAFF'), partialReturnHandler)
+router.get('/',                  requirePermission(Permission.SALES_VIEW),   listInvoices)
+router.get('/:id',               requirePermission(Permission.SALES_VIEW),   getInvoice)
+router.post('/',                 requirePermission(Permission.SALES_CREATE),  createInvoice)
+router.post('/:id/confirm',      requirePermission(Permission.SALES_CREATE),  confirmInvoiceHandler)
+router.post('/:id/cancel',       requirePermission(Permission.SALES_MANAGE),  cancelInvoiceHandler)
+router.post('/:id/return',       requirePermission(Permission.SALES_MANAGE),  returnInvoiceHandler)
+router.post('/:id/partial-return', requirePermission(Permission.SALES_MANAGE), partialReturnHandler)
 
 export default router

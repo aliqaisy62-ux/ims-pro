@@ -361,16 +361,19 @@ model RefreshSession {
   id              String    @id @default(cuid())
   userId          String
   tokenHash       String    @unique
+  familyId        String
   userAgent       String?
   ipAddress       String?
   createdAt       DateTime  @default(now())
   expiresAt       DateTime
   revokedAt       DateTime?
+  revokedReason   String?
   replacedByToken String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([tokenHash])
+  @@index([familyId])
   @@index([expiresAt])
 }
