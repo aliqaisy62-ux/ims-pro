@@ -21,7 +21,7 @@
     "electron:make":    "powershell -ExecutionPolicy Bypass -File apps/desktop/build.ps1"
   },
   "devDependencies": {
-    "electron": "^31.0.0",
+    "electron": "^42.3.0",
     "electron-builder": "^24.13.3",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
