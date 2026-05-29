@@ -21,17 +21,16 @@ const PRICE_GETTER: Record<string, (item: PricedItem) => Decimal> = {
   DINAR:     (i) => i.dinarPrice,
 }
 
-// ─── Invoice number generator (mirrors sales.service — runs inside a tx) ───────
+// ─── Invoice number generator (runs inside a tx) ──────────────────────────────
 async function generateInvoiceNumber(tx: Prisma.TransactionClient): Promise<string> {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const prefix = `INV-${dateStr}-`
-  const startPos = prefix.length + 1
-  const rows = await tx.$queryRaw<{ max_num: number | null }[]>`
-    SELECT MAX(CAST(SUBSTR("invoiceNumber", ${startPos}) AS INTEGER)) AS max_num
-    FROM "SalesInvoice"
-    WHERE "invoiceNumber" LIKE ${prefix + '%'}
-  `
-  const maxNum = rows[0]?.max_num ? Number(rows[0].max_num) : 0
+  const last = await tx.salesInvoice.findFirst({
+    where: { invoiceNumber: { startsWith: prefix } },
+    orderBy: { invoiceNumber: 'desc' },
+    select: { invoiceNumber: true },
+  })
+  const maxNum = last ? parseInt(last.invoiceNumber.slice(prefix.length), 10) : 0
   return `${prefix}${String(maxNum + 1).padStart(4, '0')}`
 }
 
