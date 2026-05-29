@@ -5,14 +5,15 @@ const config: CapacitorConfig = {
   appName: 'Etana',
   webDir: 'out',
   server: {
-    // For public-IP testing: replace YOUR_PUBLIC_IP with your actual IP (e.g. 203.x.x.x)
-    // Switch back to 'https://ims-pro.vercel.app' for production builds
-    url: 'http://212.95.151.51:3001',
-    cleartext: true,
-    androidScheme: 'http',
+    // Set CAPACITOR_SERVER_URL in your local environment for device testing.
+    // Production builds point to the production domain — never a raw IP.
+    // Example: https://your-app-domain.com
+    url: process.env.CAPACITOR_SERVER_URL || 'https://your-production-domain.com',
+    cleartext: process.env.NODE_ENV !== 'production',
+    androidScheme: 'https',
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: process.env.NODE_ENV !== 'production',
   },
 };
 

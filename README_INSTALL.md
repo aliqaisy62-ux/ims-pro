@@ -54,11 +54,11 @@ bash setup.sh 192.168.1.100
 http://192.168.1.100
 ```
 
-بيانات الدخول الافتراضية:
-- المستخدم: `admin`
-- كلمة المرور: `admin123`
+بيانات الدخول:
+- المستخدم: القيمة التي حددتها في `SEED_ADMIN_USERNAME` (الافتراضي: `admin`)
+- كلمة المرور: القيمة التي حددتها في `SEED_ADMIN_PASSWORD` (لا توجد كلمة مرور افتراضية)
 
-> **⚠️ مهم:** غيّر كلمة مرور المدير فوراً من: **الإعدادات ← إدارة المستخدمين**
+> **⚠️ مهم:** لا توجد بيانات افتراضية. يجب تعيين `SEED_ADMIN_PASSWORD` قبل أول تشغيل.
 
 ---
 
@@ -181,11 +181,11 @@ Open a browser on any device on the network:
 http://192.168.1.100
 ```
 
-Default credentials:
-- Username: `admin`
-- Password: `admin123`
+Login credentials:
+- Username: value of `SEED_ADMIN_USERNAME` (default: `admin`)
+- Password: value of `SEED_ADMIN_PASSWORD` (no default — you must set this before first run)
 
-> **⚠️ Important:** Change the admin password immediately: **Settings → User Management**
+> **⚠️ Important:** No default passwords exist. Set `SEED_ADMIN_PASSWORD` before first deployment.
 
 ---
 

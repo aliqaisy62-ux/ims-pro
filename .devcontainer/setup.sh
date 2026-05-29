@@ -8,7 +8,7 @@ echo "==> Generating Prisma client..."
 npm run db:generate
 
 echo "==> Waiting for PostgreSQL to be ready..."
-until pg_isready -h localhost -U imspro -d ims_pro 2>/dev/null; do
+until pg_isready -h localhost -U "${DB_USER:-postgres}" -d ims_pro 2>/dev/null; do
   sleep 1
 done
 echo "    PostgreSQL is ready."
@@ -30,14 +30,15 @@ if [ -n "$CODESPACE_NAME" ] && [ -n "$GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN" 
 NEXT_PUBLIC_API_URL=${API_URL}
 EOF
 
-  # Write env for the API
+  # Write env for the API — reads secrets from Codespaces environment/secrets
+  # Set JWT_SECRET and JWT_REFRESH_SECRET via GitHub Codespaces repository secrets.
   cat > apps/api/.env <<EOF
-DATABASE_URL=postgresql://imspro:***REMOVED***@localhost:5432/ims_pro
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/ims_pro
 NODE_ENV=development
 PORT=4001
 CORS_ORIGIN=${WEB_URL}
-JWT_SECRET=***REMOVED***
-JWT_REFRESH_SECRET=codespaces_dev_refresh_secret_change_in_production_min64chars_xx
+JWT_SECRET=${JWT_SECRET}
+JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
 EXCHANGE_RATE_IQD_USD=1480
 EOF
 else
@@ -45,19 +46,20 @@ else
   cat > apps/web/.env.local <<EOF
 NEXT_PUBLIC_API_URL=http://localhost:4001
 EOF
+  # Write env for the API — reads secrets from shell environment
   cat > apps/api/.env <<EOF
-DATABASE_URL=postgresql://imspro:***REMOVED***@localhost:5432/ims_pro
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/ims_pro
 NODE_ENV=development
 PORT=4001
 CORS_ORIGIN=http://localhost:3001
-JWT_SECRET=***REMOVED***
-JWT_REFRESH_SECRET=codespaces_dev_refresh_secret_change_in_production_min64chars_xx
+JWT_SECRET=${JWT_SECRET}
+JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
 EXCHANGE_RATE_IQD_USD=1480
 EOF
 fi
 
 echo ""
 echo "✅ Setup complete! The dev server will start automatically."
-echo "   Web App  → port 3001"
-echo "   API      → port 4001"
-echo "   Login    → admin / admin123"
+echo "   Web App → port 3001"
+echo "   API     → port 4001"
+echo "   Login with the credentials configured in SEED_ADMIN_USERNAME / SEED_ADMIN_PASSWORD."

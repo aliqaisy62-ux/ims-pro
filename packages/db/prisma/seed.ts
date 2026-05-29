@@ -4,44 +4,70 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Admin user
-  const passwordHash = await bcrypt.hash('admin123', 12)
-  const admin = await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      username: 'admin',
-      name: 'System Administrator',
-      passwordHash,
-      role: 'ADMIN',
-      language: 'ar',
-    },
-  })
+  const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin'
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD
 
-  // Test users for role comparison
-  await prisma.user.upsert({
-    where: { username: 'manager1' },
-    update: {},
-    create: {
-      username: 'manager1',
-      name: 'مدير تجريبي',
-      passwordHash: await bcrypt.hash('manager123', 12),
-      role: 'MANAGER',
-      language: 'ar',
-    },
-  })
+  let admin: { id: string }
 
-  await prisma.user.upsert({
-    where: { username: 'cashier1' },
-    update: {},
-    create: {
-      username: 'cashier1',
-      name: 'كاشير تجريبي',
-      passwordHash: await bcrypt.hash('cashier123', 12),
-      role: 'CASHIER',
-      language: 'ar',
-    },
-  })
+  if (adminPassword) {
+    const passwordHash = await bcrypt.hash(adminPassword, 12)
+    admin = await prisma.user.upsert({
+      where: { username: adminUsername },
+      update: {},
+      create: {
+        username: adminUsername,
+        name: 'System Administrator',
+        passwordHash,
+        role: 'ADMIN',
+        language: 'ar',
+      },
+    })
+    console.log(`✅ Admin user seeded: ${adminUsername}`)
+  } else {
+    console.warn('⚠️  SEED_ADMIN_PASSWORD not set — skipping admin user creation.')
+    console.warn('   Set SEED_ADMIN_PASSWORD in your .env file to create the initial admin.')
+    const existing = await prisma.user.findFirst({ where: { role: 'ADMIN' } })
+    if (!existing) {
+      console.error('❌ No admin user exists and SEED_ADMIN_PASSWORD is not set. The application will not be accessible.')
+      process.exit(1)
+    }
+    admin = existing
+    console.log(`   Existing admin found: ${existing.username}`)
+  }
+
+  // Demo users — development only, never seeded in production
+  if (process.env.NODE_ENV !== 'production') {
+    const demoManagerPassword = process.env.SEED_DEMO_MANAGER_PASSWORD
+    const demoCashierPassword = process.env.SEED_DEMO_CASHIER_PASSWORD
+
+    if (demoManagerPassword) {
+      await prisma.user.upsert({
+        where: { username: 'manager1' },
+        update: {},
+        create: {
+          username: 'manager1',
+          name: 'مدير تجريبي',
+          passwordHash: await bcrypt.hash(demoManagerPassword, 12),
+          role: 'MANAGER',
+          language: 'ar',
+        },
+      })
+    }
+
+    if (demoCashierPassword) {
+      await prisma.user.upsert({
+        where: { username: 'cashier1' },
+        update: {},
+        create: {
+          username: 'cashier1',
+          name: 'كاشير تجريبي',
+          passwordHash: await bcrypt.hash(demoCashierPassword, 12),
+          role: 'CASHIER',
+          language: 'ar',
+        },
+      })
+    }
+  }
 
   // Item categories
   const categories = [
@@ -117,10 +143,7 @@ async function main() {
     },
   })
 
-  console.log('✅ Seed complete')
-  console.log(`   admin    / admin123   [ADMIN]`)
-  console.log(`   manager1 / manager123 [MANAGER]`)
-  console.log(`   cashier1 / cashier123 [CASHIER]`)
+  console.log(`✅ Seed complete`)
   console.log(`   Categories: ${categories.length} item + ${expenseCategories.length} expense`)
   console.log(`   Settings: ${settings.length} keys`)
 }

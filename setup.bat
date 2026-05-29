@@ -89,7 +89,7 @@ echo.
 echo ^> Waiting for PostgreSQL to be ready...
 set /a attempts=0
 :wait_loop
-  docker compose exec -T postgres pg_isready -U imspro >nul 2>&1 && goto :pg_ready
+  docker compose exec -T postgres pg_isready -U %DB_USER% >nul 2>&1 && goto :pg_ready
   set /a attempts+=1
   if %attempts% geq 30 (
     echo [ERR]  PostgreSQL did not start. Check: docker compose logs postgres
@@ -128,10 +128,10 @@ echo ═════════════════════════
 echo   Open from any device on the network:
 echo     http://%SERVER_IP%
 echo.
-echo   Default login:  admin / admin123
+echo   Login with the admin account you configured in SEED_ADMIN_PASSWORD.
 echo.
-echo   IMPORTANT: Change the admin password in:
-echo   Settings -^> User Management -^> Edit Admin
+echo   IMPORTANT: No default passwords exist. Set SEED_ADMIN_PASSWORD before
+echo   first run. After setup, manage users in Settings -^> User Management.
 echo ══════════════════════════════════════════════════════
 pause
 endlocal

@@ -5,8 +5,8 @@
   "features": {
     "ghcr.io/devcontainers/features/postgres:1": {
       "version": "15",
-      "postgresUser": "imspro",
-      "postgresPassword": "***REMOVED***",
+      "postgresUser": "${localEnv:DB_USER}",
+      "postgresPassword": "${localEnv:DB_PASSWORD}",
       "postgresDb": "ims_pro"
     }
   },
@@ -19,12 +19,12 @@
   },
 
   "containerEnv": {
-    "DATABASE_URL": "postgresql://imspro:***REMOVED***@localhost:5432/ims_pro",
+    "DATABASE_URL": "postgresql://${localEnv:DB_USER}:${localEnv:DB_PASSWORD}@localhost:5432/ims_pro",
     "NODE_ENV": "development",
     "PORT": "4001",
     "CORS_ORIGIN": "http://localhost:3001",
-    "JWT_SECRET": "***REMOVED***",
-    "JWT_REFRESH_SECRET": "codespaces_dev_refresh_secret_change_in_production_min64chars_xx",
+    "JWT_SECRET": "${localEnv:JWT_SECRET}",
+    "JWT_REFRESH_SECRET": "${localEnv:JWT_REFRESH_SECRET}",
     "EXCHANGE_RATE_IQD_USD": "1480"
   },
 

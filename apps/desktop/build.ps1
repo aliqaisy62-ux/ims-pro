@@ -159,7 +159,7 @@ if (-not (Test-Path $DbSrc)) {
 }
 
 Copy-Item -Force $DbSrc $DbDest
-Write-Ok "seed.db: $([math]::Round((Get-Item $DbDest).Length/1KB)) KB (admin/admin123 seeded)"
+Write-Ok "seed.db: $([math]::Round((Get-Item $DbDest).Length/1KB)) KB (seeded — set SEED_ADMIN_PASSWORD before distributing)"
 
 # ============================================================
 # STEP 7 - Electron-builder
@@ -194,5 +194,5 @@ Write-Host "  |                                              |" -ForegroundColor
 Write-Host "  |  Installer: apps/desktop/dist/              |" -ForegroundColor Green
 Write-Host "  |                                              |" -ForegroundColor Green
 Write-Host "  |  First-run: copies seed.db to %APPDATA%     |" -ForegroundColor Green
-Write-Host "  |  Login:     admin / admin123                 |" -ForegroundColor Green
+Write-Host "  |  Login: use account from SEED_ADMIN_PASSWORD |" -ForegroundColor Green
 Write-Host "  +----------------------------------------------+" -ForegroundColor Green

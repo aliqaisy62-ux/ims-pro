@@ -109,7 +109,7 @@ if (-not (Test-Path $DbFile)) {
   npx prisma migrate deploy --schema prisma/schema.prisma 2>&1 | Out-Null
   npx prisma db seed                                        2>&1 | Out-Null
   Pop-Location
-  Write-Ok "Database created and seeded (admin/admin123)"
+  Write-Ok "Database created and seeded. Login with the admin account configured in SEED_ADMIN_PASSWORD."
 } else {
   Write-Ok "Database ready: $DbFile"
   # Apply any pending migrations silently
@@ -165,13 +165,30 @@ Write-Ok "Ports clear"
 
 # ─── Step 7: Start API server ─────────────────────────────────────────────────
 Write-Step "Starting API server (port 4001)..."
+
+# Generate per-launch JWT secrets — unique per machine session, never hardcoded.
+# Stored in the data directory so they survive restarts within a single session.
+$SecretsFile = Join-Path $DataDir "session-secrets.json"
+if (Test-Path $SecretsFile) {
+  $storedSecrets = Get-Content $SecretsFile | ConvertFrom-Json
+  $jwtSecret        = $storedSecrets.JWT_SECRET
+  $jwtRefreshSecret = $storedSecrets.JWT_REFRESH_SECRET
+} else {
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  $buf = New-Object byte[] 64
+  $rng.GetBytes($buf); $jwtSecret        = [Convert]::ToBase64String($buf)
+  $rng.GetBytes($buf); $jwtRefreshSecret = [Convert]::ToBase64String($buf)
+  @{ JWT_SECRET = $jwtSecret; JWT_REFRESH_SECRET = $jwtRefreshSecret } |
+    ConvertTo-Json | Set-Content $SecretsFile -Encoding UTF8
+}
+
 $apiEnv = @{
-  DATABASE_URL    = $DbUrl
-  JWT_SECRET      = "***REMOVED***"
-  JWT_REFRESH_SECRET = "***REMOVED***"
-  PORT            = "4001"
-  NODE_ENV        = "development"
-  CORS_ORIGIN     = "http://localhost:3001"
+  DATABASE_URL       = $DbUrl
+  JWT_SECRET         = $jwtSecret
+  JWT_REFRESH_SECRET = $jwtRefreshSecret
+  PORT               = "4001"
+  NODE_ENV           = "development"
+  CORS_ORIGIN        = "http://localhost:3001"
 }
 foreach ($kv in $apiEnv.GetEnumerator()) { [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value) }
 
@@ -240,7 +257,7 @@ Write-Host "  ║   App:  http://localhost:3001            ║" -ForegroundColor
 Write-Host "  ║   API:  http://localhost:4001            ║" -ForegroundColor Green
 Write-Host "  ║   DB:   data\cashier.db  (SQLite)        ║" -ForegroundColor Green
 Write-Host "  ║                                          ║" -ForegroundColor Green
-Write-Host "  ║   Login:  admin / admin123               ║" -ForegroundColor Green
+Write-Host "  ║   Login with your configured admin account║" -ForegroundColor Green
 Write-Host "  ║                                          ║" -ForegroundColor Green
 Write-Host "  ║   Press Ctrl+C to stop all servers       ║" -ForegroundColor Green
 Write-Host "  ╚══════════════════════════════════════════╝" -ForegroundColor Green

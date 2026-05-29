@@ -74,9 +74,16 @@ async function checkPage(page, path, label) {
   // ── API Setup ──────────────────────────────────────────────────
   let adminSess, acctSess
   try {
-    [adminSess, acctSess] = await Promise.all([
-      loginAPI('admin', 'admin123'),
-      loginAPI('acct_stress', 'Stress@123'),
+    const _adminU = process.env.AUDIT_ADMIN_USERNAME || 'admin'
+    const _adminP = process.env.AUDIT_ADMIN_PASSWORD
+    const _stressP = process.env.AUDIT_STRESS_PASSWORD
+    if (!_adminP || !_stressP) {
+      F('Setup', 'AUDIT_ADMIN_PASSWORD and AUDIT_STRESS_PASSWORD env vars are required')
+      process.exit(1)
+    }
+    ;[adminSess, acctSess] = await Promise.all([
+      loginAPI(_adminU, _adminP),
+      loginAPI('acct_stress', _stressP),
     ])
     P('Setup', `Admin (${adminSess.user.role}) + Accountant (${acctSess.user.role}) sessions OK`)
   } catch(e) { F('Setup', e.message); process.exit(1) }

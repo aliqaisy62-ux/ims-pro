@@ -23,15 +23,16 @@ services:
     restart: unless-stopped
     networks:
       - ims-pro_default
-    env_file: .env.docker
+    env_file:
+      - .env
     environment:
       # Uses the container name 'ims-pro-db' as the hostname — reachable
       # because both containers share the ims-pro_default network.
-      DATABASE_URL: postgresql://imspro:***REMOVED***@ims-pro-db:5432/ims_pro
-      DIRECT_URL: postgresql://imspro:***REMOVED***@ims-pro-db:5432/ims_pro
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER is required}:${DB_PASSWORD:?DB_PASSWORD is required}@ims-pro-db:5432/${DB_NAME:-ims_pro}
+      DIRECT_URL: postgresql://${DB_USER}:${DB_PASSWORD}@ims-pro-db:5432/${DB_NAME:-ims_pro}
       NODE_ENV: development
       PORT: 4001
-      CORS_ORIGIN: http://localhost:3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
       HTTPS_ENABLED: "false"
     ports:
       - "4001:4001"

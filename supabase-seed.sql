@@ -311,13 +311,14 @@ ALTER TABLE "ExchangeRateHistory" ADD CONSTRAINT "ExchangeRateHistory_changedByI
 
 -- ─── SEED DATA ────────────────────────────────────────────────
 
--- Users (bcrypt cost 12, generated fresh)
-INSERT INTO "User" ("id", "name", "username", "passwordHash", "role", "language", "isActive", "createdAt", "updatedAt")
-VALUES
-  ('user-admin-001',   'System Administrator', 'admin',    '$2a$12$JOv9wfBDbzLfmSGTL.Enx..b3r99eUOlwo6FO9yukCSR4M6Y4yvL6', 'ADMIN',   'ar', true, NOW(), NOW()),
-  ('user-manager-001', 'مدير تجريبي',           'manager1', '$2a$12$sCrQaF8PGt3FiAkGBRhb4upoW1AaBkFYfST0OBXsJKXhkQGS53Zjy', 'MANAGER', 'ar', true, NOW(), NOW()),
-  ('user-cashier-001', 'كاشير تجريبي',          'cashier1', '$2a$12$5lnC7Ha5yZxbpCyUS7rIcuSg0KfNwvzsI8HGWTvpUhj9Pi0KeHcke', 'CASHIER', 'ar', true, NOW(), NOW())
-ON CONFLICT ("username") DO NOTHING;
+-- Users are NOT seeded via this SQL file.
+-- User accounts (including the initial admin) are created through the application
+-- setup workflow using environment-variable-driven seed scripts.
+--
+-- To create the initial admin user, run:
+--   SEED_ADMIN_USERNAME=admin SEED_ADMIN_PASSWORD=<strong-password> npm run db:seed
+--
+-- Never commit user rows or password hashes to version control.
 
 -- Item Categories
 INSERT INTO "Category" ("id", "name_ar", "name_en") VALUES
@@ -355,10 +356,8 @@ INSERT INTO "Settings" ("id", "key", "value", "description", "updatedAt") VALUES
   ('set-13', 'paper_width',          '80',           'Receipt printer paper width (mm)', NOW())
 ON CONFLICT ("key") DO NOTHING;
 
--- First exchange rate history entry
-INSERT INTO "ExchangeRateHistory" ("id", "rateIQD", "changedById", "createdAt")
-VALUES ('exrate-001', 1480, 'user-admin-001', NOW())
-ON CONFLICT DO NOTHING;
+-- Exchange rate history is seeded by the application seed script after the admin
+-- user is created. It requires a valid changedById FK — see packages/db/prisma/seed.ts.
 
 -- ─── Prisma migrations tracking (so prisma doesn't re-run this) ──
 CREATE TABLE IF NOT EXISTS "_prisma_migrations" (

@@ -63,7 +63,7 @@ docker compose up -d --build
 # ─── 5. Wait for PostgreSQL ───────────────────────────────────
 step "Waiting for PostgreSQL to be ready..."
 for i in $(seq 1 30); do
-  if docker compose exec -T postgres pg_isready -U imspro >/dev/null 2>&1; then
+  if docker compose exec -T postgres pg_isready -U "${DB_USER:-postgres}" >/dev/null 2>&1; then
     info "PostgreSQL is ready."
     break
   fi
@@ -100,8 +100,8 @@ echo -e "${GREEN}═════════════════════
 echo -e "  Access from any device on the network:"
 echo -e "    ${CYAN}http://${SERVER_IP}${NC}"
 echo ""
-echo -e "  Default login: ${YELLOW}admin${NC} / ${YELLOW}admin123${NC}"
+echo -e "  Login with the admin account configured in ${YELLOW}SEED_ADMIN_PASSWORD${NC}."
 echo ""
-echo -e "${RED}  ⚠  Change the admin password immediately:${NC}"
-echo -e "  Settings → User Management → Edit Admin"
+echo -e "${RED}  ⚠  No default passwords exist. Set SEED_ADMIN_PASSWORD before first run.${NC}"
+echo -e "  After setup, manage users in Settings → User Management."
 echo -e "${GREEN}══════════════════════════════════════════════════════${NC}"

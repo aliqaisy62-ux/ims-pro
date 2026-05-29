@@ -3,7 +3,7 @@
  * 4 Headed Firefox Windows | Zero-Tolerance Bug Detection
  *
  * Run:  node stress-audit.js
- * Prereq: API on :4001, Web on :3001, admin/admin123 exists
+ * Prereq: API on :4001, Web on :3001. Set AUDIT_ADMIN_USERNAME and AUDIT_ADMIN_PASSWORD env vars.
  */
 
 'use strict'
@@ -96,7 +96,10 @@ async function goToDashboard(page, label) {
   // Admin login
   let adminSess
   try {
-    adminSess = await loginAPI('admin', 'admin123')
+    const _u = process.env.AUDIT_ADMIN_USERNAME || 'admin'
+    const _p = process.env.AUDIT_ADMIN_PASSWORD
+    if (!_p) { F('Setup', 'AUDIT_ADMIN_PASSWORD env var is required'); process.exit(1) }
+    adminSess = await loginAPI(_u, _p)
     I('Setup', `Admin authenticated: ${adminSess.user.username} (${adminSess.user.role})`)
   } catch (e) {
     F('Setup', `Admin login FAILED: ${e.message}`)
@@ -114,10 +117,12 @@ async function goToDashboard(page, label) {
   P('Setup', `Rate limiter OK — ${rlCheck.status} on first probe`)
 
   // Create 3 test users (idempotent — 409 = already exists, that's OK)
+  const stressPassword = process.env.AUDIT_STRESS_PASSWORD
+  if (!stressPassword) { F('Setup', 'AUDIT_STRESS_PASSWORD env var is required for test user creation'); process.exit(1) }
   const testUsers = [
-    { name: 'محاسب الضغط', username: 'acct_stress', password: 'Stress@123', role: 'ACCOUNTANT', language: 'ar' },
-    { name: 'موظف ضغط 1',  username: 'staff_s1',    password: 'Stress@123', role: 'STAFF',      language: 'ar' },
-    { name: 'موظف ضغط 2',  username: 'staff_s2',    password: 'Stress@123', role: 'STAFF',      language: 'ar' },
+    { name: 'محاسب الضغط', username: 'acct_stress', password: stressPassword, role: 'ACCOUNTANT', language: 'ar' },
+    { name: 'موظف ضغط 1',  username: 'staff_s1',    password: stressPassword, role: 'STAFF',      language: 'ar' },
+    { name: 'موظف ضغط 2',  username: 'staff_s2',    password: stressPassword, role: 'STAFF',      language: 'ar' },
   ]
   for (const u of testUsers) {
     const r = await apiCall('POST', '/settings/users', u, AT)

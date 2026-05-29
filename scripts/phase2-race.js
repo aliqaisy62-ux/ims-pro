@@ -64,9 +64,16 @@ async function injectSession(ctx, cookieValue) {
     P('Setup', 'Using pre-supplied tokens (skipping login)')
   } else {
     try {
-      [adminSess, staffSess] = await Promise.all([
-        loginAPI('admin', 'admin123'),
-        loginAPI('staff_s1', 'Stress@123'),
+      const _adminU = process.env.AUDIT_ADMIN_USERNAME || 'admin'
+      const _adminP = process.env.AUDIT_ADMIN_PASSWORD
+      const _stressP = process.env.AUDIT_STRESS_PASSWORD
+      if (!_adminP || !_stressP) {
+        F('Setup', 'AUDIT_ADMIN_PASSWORD and AUDIT_STRESS_PASSWORD env vars are required')
+        process.exit(1)
+      }
+      ;[adminSess, staffSess] = await Promise.all([
+        loginAPI(_adminU, _adminP),
+        loginAPI('staff_s1', _stressP),
       ])
       // Print tokens for reuse on retry
       I('Setup', `ADMIN_TOKEN=${adminSess.token}`)

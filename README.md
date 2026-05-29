@@ -59,31 +59,38 @@ The app will be available at:
 - **Web UI**: http://localhost:3001
 - **API**: http://localhost:4001
 
-### Default Login
+### First Run Administrator Setup
 
-| Username | Password | Role |
-|---|---|---|
-| `admin` | `admin123` | Admin (full access) |
-| `manager1` | `manager123` | Manager |
-| `cashier1` | `cashier123` | Cashier |
+No default credentials exist. The application ships with no pre-seeded users.
+
+Create the initial admin account before first launch:
+
+```bash
+# Set in your .env file — never commit real passwords
+SEED_DB=true
+SEED_ADMIN_USERNAME=admin
+SEED_ADMIN_PASSWORD=<choose-a-strong-password>
+```
+
+Demo accounts (`manager1`, `cashier1`) are disabled in production (`NODE_ENV=production`).
+They can only be seeded in development by setting `SEED_DEMO_MANAGER_PASSWORD` and
+`SEED_DEMO_CASHIER_PASSWORD` in your local `.env`.
 
 ## Environment Files
 
-The project uses two `.env` files that are **not committed** (excluded by `.gitignore`):
+Copy `.env.example` to `.env` and fill in every `<REQUIRED>` placeholder before running.
+Never commit `.env` files — they are excluded by `.gitignore`.
 
-**`apps/api/.env`**
-```env
-DATABASE_URL="file:../../../data/cashier.db"
-JWT_SECRET="change-this-before-production"
-JWT_REFRESH_SECRET="change-this-before-production"
-PORT=4001
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:3001
+Required variables:
+
 ```
-
-**`apps/web/.env.local`**
-```env
-NEXT_PUBLIC_API_URL=http://localhost:4001
+DB_USER             Database username
+DB_PASSWORD         Database password (use a strong random value)
+DATABASE_URL        Full PostgreSQL connection string
+JWT_SECRET          64-byte random string  (openssl rand -base64 64)
+JWT_REFRESH_SECRET  64-byte random string  (openssl rand -base64 64)
+CORS_ORIGIN         Allowed frontend origin(s)
+SEED_ADMIN_PASSWORD Strong password for the initial admin (when SEED_DB=true)
 ```
 
 ## Project Structure

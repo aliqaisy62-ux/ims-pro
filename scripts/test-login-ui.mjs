@@ -19,11 +19,18 @@ await page.screenshot({ path: `${OUT}/test-01-login-page.png`, fullPage: false }
 console.log('   Screenshot: test-01-login-page.png')
 
 // ── 2. Fill and submit ────────────────────────────────────────────────────────
-console.log('2. Filling credentials (admin / admin123)...')
+const _testUser = process.env.AUDIT_ADMIN_USERNAME || 'admin'
+const _testPass = process.env.AUDIT_ADMIN_PASSWORD
+if (!_testPass) {
+  console.error('AUDIT_ADMIN_PASSWORD env var is required to run this script.')
+  await browser.close()
+  process.exit(1)
+}
+console.log(`2. Filling credentials (${_testUser} / ***)...`)
 await page.click('input[type="text"], input[name="username"], input[placeholder*="admin"], input[placeholder*="اسم"]')
-await page.keyboard.type('admin', { delay: 60 })
+await page.keyboard.type(_testUser, { delay: 60 })
 await page.click('input[type="password"]')
-await page.keyboard.type('admin123', { delay: 60 })
+await page.keyboard.type(_testPass, { delay: 60 })
 await page.screenshot({ path: `${OUT}/test-02-credentials-filled.png` })
 console.log('   Screenshot: test-02-credentials-filled.png')
 

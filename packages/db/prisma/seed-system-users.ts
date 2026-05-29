@@ -1,11 +1,27 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
+// This script is for development/staging environments only.
+// Never run in production without explicit intent.
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ seed-system-users.ts must not run in production. Exiting.')
+  process.exit(1)
+}
+
 const prisma = new PrismaClient()
 
+const adminPassword  = process.env.SEED_SYSTEM_ADMIN_PASSWORD
+const cashierPassword = process.env.SEED_SYSTEM_CASHIER_PASSWORD
+
+if (!adminPassword || !cashierPassword) {
+  console.error('❌ SEED_SYSTEM_ADMIN_PASSWORD and SEED_SYSTEM_CASHIER_PASSWORD must be set.')
+  console.error('   These are never hardcoded. Set them in your local .env file.')
+  process.exit(1)
+}
+
 const users = [
-  { username: 'admin@system.com',   name: 'System Admin',    password: 'Admin@12345',   role: 'ADMIN' },
-  { username: 'cashier@system.com', name: 'System Cashier',  password: 'Cashier@12345', role: 'CASHIER' },
+  { username: 'admin@system.com',   name: 'System Admin',   password: adminPassword,   role: 'ADMIN'   },
+  { username: 'cashier@system.com', name: 'System Cashier', password: cashierPassword, role: 'CASHIER' },
 ]
 
 async function main() {
