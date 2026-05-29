@@ -1,3 +1,3 @@
-// Re-export real Decimal from Prisma runtime for unit tests.
-// Prisma's Decimal is Decimal.js under the hood — same arithmetic in tests as in production.
-export { Decimal } from '../../../../node_modules/@prisma/client/runtime/library'
+// Prisma's Decimal is Decimal.js. Re-export from the installed root location.
+// This file is only used by ts-jest — not by the production tsc build.
+export { Decimal } from '@prisma/client/runtime/library'
