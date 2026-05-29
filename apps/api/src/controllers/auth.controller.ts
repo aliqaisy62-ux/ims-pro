@@ -2,10 +2,11 @@ import { Request, Response } from 'express'
 import { validateCredentials, generateAccessToken, generateRefreshToken, verifyRefreshToken, getUserById } from '../services/auth.service'
 
 const COOKIE_NAME = '__refresh_token'
+const isProduction = process.env.NODE_ENV === 'production'
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'strict' as const,
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: isProduction ? ('none' as const) : ('lax' as const),
+  secure: isProduction,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/',
 }
