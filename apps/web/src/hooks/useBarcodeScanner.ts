@@ -3,16 +3,25 @@ import { useEffect, useRef } from 'react'
 interface Options {
   onScan: (barcode: string) => void
   enabled?: boolean
-  /** Barcode input element to skip (already handled by form) */
+  /** Barcode input element — already handles its own Enter, so skip it here */
   barcodeInputRef?: React.RefObject<HTMLInputElement>
   minLength?: number
 }
 
 /**
- * Global HID barcode scanner listener.
- * USB scanners type chars with < 30ms gaps then send Enter.
- * Fires onScan only when focus is NOT on an interactive input/textarea/select
- * (or when focus IS on the designated barcodeInputRef, which handles itself).
+ * Global HID/Bluetooth barcode scanner listener.
+ *
+ * Listens on `document` so keystrokes are captured regardless of which
+ * element currently has focus (body, a div, or any non-barcode input).
+ *
+ * Detection rules:
+ *  - Consecutive keystrokes arriving ≤ 200 ms apart are treated as scanner input.
+ *  - A gap > 200 ms while the buffer is non-empty resets the buffer (human typing).
+ *  - An Enter key flushes the buffer and fires onScan if length ≥ minLength.
+ *  - A 350 ms idle timer auto-flushes in case the scanner omits Enter.
+ *
+ * The designated barcodeInputRef element is intentionally skipped here —
+ * it handles scanner Enter via its own onKeyDown → lookupBarcode.
  */
 export function useBarcodeScanner({ onScan, enabled = true, barcodeInputRef, minLength = 3 }: Options) {
   const bufferRef = useRef('')
@@ -22,40 +31,41 @@ export function useBarcodeScanner({ onScan, enabled = true, barcodeInputRef, min
   useEffect(() => {
     if (!enabled) return
 
+    function flush() {
+      const barcode = bufferRef.current.trim()
+      bufferRef.current = ''
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
+      if (barcode.length >= minLength) onScan(barcode)
+    }
+
     function handleKeyDown(e: KeyboardEvent) {
       const active = document.activeElement as HTMLElement | null
-      const tag = active?.tagName.toLowerCase() ?? ''
 
-      // If the designated barcode input has focus, the form's onSubmit handles it
+      // The designated barcode input handles its own Enter via onKeyDown → lookupBarcode.
+      // Let native input behaviour run; this hook stays out of the way.
       if (barcodeInputRef?.current && active === barcodeInputRef.current) return
-
-      // If user is typing in any other input/textarea/select, leave them alone
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
 
       const now = Date.now()
       const gap = now - lastKeyTimeRef.current
       lastKeyTimeRef.current = now
 
-      // Gap > 100ms while buffer has data → human typing, reset
-      if (gap > 100 && bufferRef.current.length > 0) {
+      // Gap > 200 ms while buffer is non-empty → human typing, reset
+      if (gap > 200 && bufferRef.current.length > 0) {
         bufferRef.current = ''
+        if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
       }
 
       if (e.key === 'Enter') {
-        const barcode = bufferRef.current.trim()
-        bufferRef.current = ''
-        if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
-        if (barcode.length >= minLength) {
-          e.preventDefault()
-          onScan(barcode)
-        }
+        if (bufferRef.current.length >= minLength) e.preventDefault()
+        flush()
         return
       }
 
       if (e.key.length === 1) {
         bufferRef.current += e.key
+        // Reset the idle-flush timer on every new char
         if (timerRef.current) clearTimeout(timerRef.current)
-        timerRef.current = setTimeout(() => { bufferRef.current = '' }, 250)
+        timerRef.current = setTimeout(flush, 350)
       }
     }
 
