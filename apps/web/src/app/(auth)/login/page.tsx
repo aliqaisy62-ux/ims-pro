@@ -17,8 +17,8 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(username, password)
-      router.push('/dashboard')
+      const user = await login(username, password)
+      router.push(user.role === 'CASHIER' ? '/pos' : '/dashboard')
     } catch {
       setError('اسم المستخدم أو كلمة المرور غير صحيحة')
     } finally {

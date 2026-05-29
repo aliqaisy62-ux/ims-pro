@@ -8,7 +8,7 @@ import { AuthUser } from '@ims-pro/types'
 interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<AuthUser>
   logout: () => Promise<void>
 }
 
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false))
   }, [])
 
-  async function login(username: string, password: string) {
+  async function login(username: string, password: string): Promise<AuthUser> {
     const { data } = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/login`,
       { username, password },
@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
     setAccessToken(data.data.accessToken)
     setUser(data.data.user)
+    return data.data.user as AuthUser
   }
 
   async function logout() {

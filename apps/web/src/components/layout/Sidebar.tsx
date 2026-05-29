@@ -16,7 +16,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',      icon: '📊', labelAr: 'لوحة التحكم',    roles: ['ADMIN', 'MANAGER', 'CASHIER', 'VIEWER', 'ACCOUNTANT', 'STAFF'] },
+  { href: '/dashboard',      icon: '📊', labelAr: 'لوحة التحكم',    roles: ['ADMIN', 'MANAGER', 'VIEWER', 'ACCOUNTANT', 'STAFF'] },
+  { href: '/pos',            icon: '🏪', labelAr: 'نقطة البيع',      roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF'] },
   { href: '/sales',          icon: '🧾', labelAr: 'المبيعات',        roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF'] },
   { href: '/purchases',      icon: '🛒', labelAr: 'المشتريات',       roles: ['ADMIN', 'MANAGER'] },
   { href: '/customers',      icon: '👥', labelAr: 'العملاء',         roles: ['ADMIN', 'MANAGER', 'CASHIER', 'STAFF', 'ACCOUNTANT'] },

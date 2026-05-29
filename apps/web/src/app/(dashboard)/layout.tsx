@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (isLoading) return
     if (!user) { router.replace('/login'); return }
-    if (!isAllowed(pathname, user.role)) router.replace('/dashboard')
+    if (!isAllowed(pathname, user.role)) router.replace(user.role === 'CASHIER' ? '/pos' : '/dashboard')
   }, [user, isLoading, router, pathname])
 
   if (isLoading || !user || !isAllowed(pathname, user.role)) {
