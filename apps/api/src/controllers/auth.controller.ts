@@ -2,11 +2,13 @@ import { Request, Response } from 'express'
 import { validateCredentials, generateAccessToken, generateRefreshToken, verifyRefreshToken, getUserById } from '../services/auth.service'
 
 const COOKIE_NAME = '__refresh_token'
-const isProduction = process.env.NODE_ENV === 'production'
+// HTTPS_ENABLED must be explicitly set to "true" — NODE_ENV alone is not enough
+// because LAN deployments run production mode over plain HTTP.
+const isHttps = process.env.HTTPS_ENABLED === 'true'
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: isProduction ? ('none' as const) : ('lax' as const),
-  secure: isProduction,
+  sameSite: isHttps ? ('none' as const) : ('lax' as const),
+  secure: isHttps,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/',
 }
