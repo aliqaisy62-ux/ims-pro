@@ -8,14 +8,12 @@ async function generateInvoiceNumberInTx(tx: Prisma.TransactionClient): Promise<
   const now = new Date()
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
   const prefix = `INV-${dateStr}-`
-  // SQLite-compatible: use SUBSTR instead of PostgreSQL SUBSTRING ... FROM
-  const startPos = prefix.length + 1
-  const result = await tx.$queryRaw<{ max_num: number | null }[]>`
-    SELECT MAX(CAST(SUBSTR("invoiceNumber", ${startPos}) AS INTEGER)) AS max_num
-    FROM "SalesInvoice"
-    WHERE "invoiceNumber" LIKE ${prefix + '%'}
-  `
-  const maxNum = result[0]?.max_num ? Number(result[0].max_num) : 0
+  const last = await tx.salesInvoice.findFirst({
+    where: { invoiceNumber: { startsWith: prefix } },
+    orderBy: { invoiceNumber: 'desc' },
+    select: { invoiceNumber: true },
+  })
+  const maxNum = last ? parseInt(last.invoiceNumber.slice(prefix.length), 10) : 0
   return `${prefix}${String(maxNum + 1).padStart(4, '0')}`
 }
 

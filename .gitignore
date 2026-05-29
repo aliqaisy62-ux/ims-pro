@@ -76,6 +76,12 @@ cookies.txt
 *.json.bak
 login_response.json
 
+# Documentation binaries — keep off GitHub, stored locally only
+*.pdf
+*.html
+# Exception: Electron splash screen is a required app asset
+!apps/desktop/splash.html
+
 .vercel
 
 # Sensitive internal docs — never commit operational notes to public repos

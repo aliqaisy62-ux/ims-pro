@@ -11,9 +11,9 @@ export function getAccessToken() {
 }
 
 const api = axios.create({
-  // Use relative /api so requests always route through Nginx on the same host.
-  // Override with NEXT_PUBLIC_API_URL at build time for non-Nginx deployments.
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
+  // Service paths already include /api/ prefix; baseURL is empty for relative routing through Nginx.
+  // Override with NEXT_PUBLIC_API_URL (no trailing /api) at build time for non-Nginx deployments.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '',
   withCredentials: true,
 })
 
