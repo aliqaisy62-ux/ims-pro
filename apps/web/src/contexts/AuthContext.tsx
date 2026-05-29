@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initialized.current = true
     axios
       .post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/refresh`,
+        `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/refresh`,
         {},
         { withCredentials: true }
       )
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(username: string, password: string) {
     const { data } = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/login`,
+      `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/login`,
       { username, password },
       { withCredentials: true }
     )
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await axios
       .post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/logout`,
+        `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/logout`,
         {},
         { withCredentials: true }
       )

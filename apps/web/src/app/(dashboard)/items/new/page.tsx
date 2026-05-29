@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { itemsService } from '@/services/items.service'
 import { CameraScanner } from '@/components/barcode/CameraScanner'
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 
 interface Category { id: string; name_ar: string; name_en: string }
 
@@ -16,6 +17,7 @@ function NewItemPageInner() {
   const [showCamera, setShowCamera] = useState(false)
   const [barcodeError, setBarcodeError] = useState('')
   const [existingItem, setExistingItem] = useState<{ id: string; name_ar: string; name_en: string } | null>(null)
+  const barcodeInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     barcode: '', name_ar: '', name_en: '', unit: 'piece', categoryId: '',
     costPrice: 0, retailPrice: 0, wholesalePrice: 0, specialPrice: 0,
@@ -31,6 +33,27 @@ function NewItemPageInner() {
   useEffect(() => {
     itemsService.getCategories().then(setCategories).catch(() => {})
   }, [])
+
+  const lookupBarcode = useCallback(async (code: string) => {
+    if (!code.trim()) return
+    setBarcodeError('')
+    setExistingItem(null)
+    setForm(f => ({ ...f, barcode: code }))
+    try {
+      const found = await itemsService.getByBarcode(code)
+      setExistingItem(found)
+    } catch {
+      // Not found — field pre-filled, user can proceed
+    }
+  }, [])
+
+  useBarcodeScanner({ onScan: lookupBarcode, barcodeInputRef, enabled: !showCamera })
+
+  async function handleBarcodeKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    await lookupBarcode(form.barcode.trim())
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value, type } = e.target
@@ -94,13 +117,18 @@ function NewItemPageInner() {
             <input name="name_en" value={form.name_en} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الباركود</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              الباركود
+              <span className="mr-2 text-xs font-normal text-green-600 dark:text-green-400">● جاهز للمسح</span>
+            </label>
             <div className="flex gap-2">
               <input
+                ref={barcodeInputRef}
                 name="barcode"
                 value={form.barcode}
                 onChange={handleChange}
-                placeholder="يُولَّد تلقائياً إذا ترك فارغاً"
+                onKeyDown={handleBarcodeKeyDown}
+                placeholder="امسح بالماسح أو أدخل يدوياً ثم Enter"
                 className={`flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${barcodeError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600'}`}
               />
               <button type="button" onClick={() => setShowCamera(true)} title="مسح بالكاميرا"
@@ -115,20 +143,7 @@ function NewItemPageInner() {
           </div>
           <CameraScanner
             open={showCamera}
-            onDetect={async (code) => {
-              setShowCamera(false)
-              setBarcodeError('')
-              setExistingItem(null)
-              try {
-                const found = await itemsService.getByBarcode(code)
-                // Barcode already exists — show edit prompt
-                setExistingItem(found)
-                setForm(f => ({ ...f, barcode: code }))
-              } catch {
-                // Not found — just pre-fill
-                setForm(f => ({ ...f, barcode: code }))
-              }
-            }}
+            onDetect={(code) => { setShowCamera(false); lookupBarcode(code) }}
             onClose={() => setShowCamera(false)}
           />
           <div>
