@@ -69,3 +69,5 @@ apps/desktop/assets/seed.db
 *.png
 screenshot.js
 debug.js
+
+.vercel

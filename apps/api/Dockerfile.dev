@@ -1,0 +1,33 @@
+FROM node:20-alpine
+WORKDIR /app
+RUN apk add --no-cache libc6-compat openssl
+
+# ── Install dependencies (cached layer — only re-runs when package files change)
+COPY package.json package-lock.json turbo.json ./
+COPY apps/api/package.json  ./apps/api/
+COPY packages/db/package.json    ./packages/db/
+COPY packages/types/package.json ./packages/types/
+
+RUN npm ci \
+    --workspace=apps/api \
+    --workspace=packages/db \
+    --workspace=packages/types \
+    --include-workspace-root
+
+# ── Copy source (bind-mounted at runtime for hot-reload, but needed here
+#    so `prisma generate` can read the schema during image build)
+COPY packages/db    ./packages/db
+COPY packages/types ./packages/types
+COPY apps/api       ./apps/api
+
+# Generate Prisma client into node_modules (persists across volume mounts)
+RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
+
+# Copy dev entrypoint
+COPY apps/api/entrypoint.dev.sh ./entrypoint.dev.sh
+RUN chmod +x entrypoint.dev.sh
+
+EXPOSE 4001
+
+# On container start: push schema then launch API with hot-reload
+CMD ["./entrypoint.dev.sh"]

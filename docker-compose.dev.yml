@@ -1,0 +1,64 @@
+version: '3.8'
+
+# Local development stack — reuses the existing ims-pro-db container.
+# Usage: docker-compose -f docker-compose.dev.yml up --build
+#
+# Prerequisite: the ims-pro-db container must already be running.
+#   docker-compose up db   (from the main docker-compose.yml)
+#
+# Ports exposed to host:
+#   Express API → localhost:4001
+#   Next.js     → localhost:3001
+
+services:
+
+  # ─── Express API ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    container_name: ims-pro-api-dev
+    restart: unless-stopped
+    networks:
+      - ims-pro_default
+    env_file: .env.docker
+    environment:
+      # Uses the container name 'ims-pro-db' as the hostname — reachable
+      # because both containers share the ims-pro_default network.
+      DATABASE_URL: postgresql://imspro:***REMOVED***@ims-pro-db:5432/ims_pro
+      DIRECT_URL: postgresql://imspro:***REMOVED***@ims-pro-db:5432/ims_pro
+      NODE_ENV: development
+      PORT: 4001
+      CORS_ORIGIN: http://localhost:3001
+    ports:
+      - "4001:4001"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src:delegated
+      - ./packages:/app/packages:delegated
+
+  # ─── Next.js Frontend ────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    container_name: ims-pro-web-dev
+    restart: unless-stopped
+    networks:
+      - ims-pro_default
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4001
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:delegated
+      - ./apps/web/public:/app/apps/web/public:delegated
+      - ./packages:/app/packages:delegated
+
+networks:
+  ims-pro_default:
+    external: true

@@ -2,6 +2,31 @@ FROM node:20-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
+# ─── Development stage ───────────────────────────────────────────────────────
+# Target this stage in docker-compose.dev.yml: `target: dev`
+# Runs `next dev` with hot-reload; source is bind-mounted at runtime.
+FROM base AS dev
+COPY package.json package-lock.json turbo.json ./
+COPY apps/web/package.json    ./apps/web/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/i18n/package.json ./packages/i18n/
+COPY packages/types/package.json ./packages/types/
+RUN npm ci \
+    --workspace=apps/web \
+    --workspace=packages/ui \
+    --workspace=packages/i18n \
+    --workspace=packages/types \
+    --include-workspace-root
+COPY apps/web     ./apps/web
+COPY packages/ui  ./packages/ui
+COPY packages/i18n ./packages/i18n
+COPY packages/types ./packages/types
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3001
+# next dev must run from the app directory so it finds next.config.mjs
+CMD ["sh", "-c", "cd apps/web && exec npx next dev -p 3001 -H 0.0.0.0"]
+
+# ─── Production builder ───────────────────────────────────────────────────────
 FROM base AS builder
 COPY package.json package-lock.json turbo.json ./
 COPY apps/web/package.json ./apps/web/
