@@ -555,3 +555,72 @@ export async function getSupplierStatement(params: {
     },
   }
 }
+
+// ─── Top Sellers ───────────────────────────────────────────────────────────────
+
+export async function getTopSellers(params: { from: string; to: string; limit?: number }) {
+  const { from, to, limit = 10 } = params
+  const fromDate = startOfDay(from)
+  const toDate = endOfDay(to)
+
+  const rows = await prisma.salesInvoiceItem.groupBy({
+    by: ['itemId'],
+    where: {
+      invoice: {
+        status: 'CONFIRMED',
+        createdAt: { gte: fromDate, lte: toDate },
+      },
+    },
+    _sum: { quantity: true, subtotal: true },
+    orderBy: { _sum: { subtotal: 'desc' } },
+    take: limit,
+  })
+
+  const itemIds = rows.map((r) => r.itemId)
+  const items = await prisma.item.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, name_ar: true, name_en: true, barcode: true },
+  })
+  const itemMap = Object.fromEntries(items.map((i) => [i.id, i]))
+
+  return rows.map((r, idx) => ({
+    rank: idx + 1,
+    itemId: r.itemId,
+    name_ar: itemMap[r.itemId]?.name_ar ?? '—',
+    name_en: itemMap[r.itemId]?.name_en ?? '',
+    barcode: itemMap[r.itemId]?.barcode ?? '',
+    totalQty: Number(r._sum.quantity ?? 0),
+    totalRevenue: Number(r._sum.subtotal ?? 0),
+  }))
+}
+
+// ─── Peak Hours ────────────────────────────────────────────────────────────────
+
+export async function getPeakHours(params: { from: string; to: string }) {
+  const { from, to } = params
+  const fromDate = startOfDay(from)
+  const toDate = endOfDay(to)
+
+  const rows = await prisma.$queryRaw<{ hour: number; invoice_count: bigint; total_revenue: string }[]>`
+    SELECT
+      EXTRACT(HOUR FROM "createdAt")::int AS hour,
+      COUNT(*) AS invoice_count,
+      SUM("total")::text AS total_revenue
+    FROM "SalesInvoice"
+    WHERE status = 'CONFIRMED'
+      AND "createdAt" >= ${fromDate}
+      AND "createdAt" <= ${toDate}
+    GROUP BY EXTRACT(HOUR FROM "createdAt")
+    ORDER BY hour ASC
+  `
+
+  return Array.from({ length: 24 }, (_, h) => {
+    const row = rows.find((r) => Number(r.hour) === h)
+    return {
+      hour: h,
+      label: `${String(h).padStart(2, '0')}:00`,
+      invoiceCount: Number(row?.invoice_count ?? 0),
+      totalRevenue: Number(row?.total_revenue ?? 0),
+    }
+  })
+}

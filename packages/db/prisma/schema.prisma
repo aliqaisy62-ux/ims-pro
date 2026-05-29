@@ -26,6 +26,7 @@ model User {
   stockTransfers      StockTransfer[]
   paymentVouchers     PaymentVoucher[]
   exchangeRateHistory ExchangeRateHistory[]
+  auditLogs           AuditLog[]
 
   @@index([username])
   @@index([isActive])
@@ -329,4 +330,22 @@ model Settings {
   updatedAt   DateTime @updatedAt
 
   @@index([key])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
 }

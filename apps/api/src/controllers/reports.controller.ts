@@ -7,6 +7,8 @@ import {
   getInventoryReport,
   getCustomerStatement,
   getSupplierStatement,
+  getTopSellers,
+  getPeakHours,
 } from '../services/reports.service'
 
 export async function todaySummaryHandler(_req: Request, res: Response) {
@@ -91,6 +93,38 @@ export async function customerStatement(req: Request, res: Response) {
     if (msg === 'CUSTOMER_NOT_FOUND') {
       return res.status(404).json({ success: false, error: 'العميل غير موجود' })
     }
+    res.status(500).json({ success: false, error: msg })
+  }
+}
+
+export async function topSellersHandler(req: Request, res: Response) {
+  try {
+    const { from, to, limit } = req.query
+    if (!from || !to) {
+      return res.status(400).json({ success: false, error: 'يجب تحديد تاريخ البداية والنهاية' })
+    }
+    const data = await getTopSellers({
+      from: from as string,
+      to: to as string,
+      limit: limit ? parseInt(limit as string, 10) : 10,
+    })
+    res.json({ success: true, data })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to get top sellers'
+    res.status(500).json({ success: false, error: msg })
+  }
+}
+
+export async function peakHoursHandler(req: Request, res: Response) {
+  try {
+    const { from, to } = req.query
+    if (!from || !to) {
+      return res.status(400).json({ success: false, error: 'يجب تحديد تاريخ البداية والنهاية' })
+    }
+    const data = await getPeakHours({ from: from as string, to: to as string })
+    res.json({ success: true, data })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to get peak hours'
     res.status(500).json({ success: false, error: msg })
   }
 }

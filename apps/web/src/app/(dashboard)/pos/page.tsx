@@ -3,9 +3,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
+import { useSoundFeedback } from '@/hooks/useSoundFeedback'
 import { itemsService } from '@/services/items.service'
 import { customersService } from '@/services/customers.service'
 import { posService, PosCheckoutPayload } from '@/services/pos.service'
+
+const IQD_DENOMINATIONS = [250, 500, 1_000, 5_000, 10_000, 25_000, 50_000]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,6 +119,7 @@ export default function PosPage() {
   const [barcodeInput, setBarcodeInput] = useState('')
 
   const { toasts, add: addToast } = useToasts()
+  const { playBeep, playBuzz } = useSoundFeedback()
 
   // ─── Load customers for CREDIT selector ────────────────────────────────────
   useEffect(() => {
@@ -214,9 +218,11 @@ export default function PosPage() {
     try {
       const item = await itemsService.getByBarcode(code.trim())
       addToCart(item, priceType)
+      playBeep()
       addToast(`تمت الإضافة: ${item.name_ar}`, 'success')
       setBarcodeInput('')
     } catch {
+      playBuzz()
       addToast(`لم يتم العثور على: ${code}`, 'error')
       setBarcodeInput('')
     }
@@ -533,20 +539,42 @@ export default function PosPage() {
 
             {/* Amount paid (CASH) */}
             {paymentMethod === 'CASH' && (
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value)}
-                  placeholder="المبلغ المدفوع"
-                  min={0}
-                  className="flex-1 h-9 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {change > 0 && (
-                  <div className="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 text-sm text-green-700 dark:text-green-400 whitespace-nowrap min-w-[90px]">
-                    الباقي: <strong>{change.toLocaleString()}</strong>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    placeholder="المبلغ المدفوع"
+                    min={0}
+                    className="flex-1 h-9 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {change > 0 && (
+                    <div className="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 text-sm text-green-700 dark:text-green-400 whitespace-nowrap min-w-[90px]">
+                      الباقي: <strong>{change.toLocaleString()}</strong>
+                    </div>
+                  )}
+                </div>
+                {/* IQD denomination quick-buttons */}
+                <div className="flex flex-wrap gap-1">
+                  {IQD_DENOMINATIONS.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setAmountPaid((prev) => String((Number(prev) || 0) + d))}
+                      className="flex-1 min-w-[52px] py-1.5 text-xs font-semibold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors min-h-[36px]"
+                    >
+                      {d.toLocaleString('ar-IQ')}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAmountPaid('')}
+                    className="px-2.5 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors min-h-[36px]"
+                  >
+                    مسح
+                  </button>
+                </div>
               </div>
             )}
 

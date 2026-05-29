@@ -6,6 +6,7 @@ import {
   verifyRefreshToken,
   getUserById,
 } from '../services/auth.service'
+import { logAudit } from '../services/audit.service'
 
 const COOKIE_NAME = '__refresh_token'
 const ROLE_COOKIE = '__user_role'
@@ -42,6 +43,7 @@ export async function login(req: Request, res: Response) {
   const refreshToken = generateRefreshToken(user.id)
   res.cookie(COOKIE_NAME, refreshToken, COOKIE_OPTIONS)
   res.cookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTIONS)
+  logAudit(user.id, 'LOGIN', 'User', user.id, undefined, req.ip)
   return res.json({ success: true, data: { accessToken, user } })
 }
 
@@ -68,7 +70,8 @@ export async function refresh(req: Request, res: Response) {
   return res.json({ success: true, data: { accessToken: generateAccessToken(user), user } })
 }
 
-export async function logout(_req: Request, res: Response) {
+export async function logout(req: Request, res: Response) {
+  if (req.user?.id) logAudit(req.user.id, 'LOGOUT', 'User', req.user.id, undefined, req.ip)
   res.clearCookie(COOKIE_NAME, { path: '/' })
   res.clearCookie(ROLE_COOKIE, { path: '/' })
   return res.json({ success: true })

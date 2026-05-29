@@ -19,6 +19,7 @@ import settingsRouter from './routes/settings.routes'
 import reportsRouter from './routes/reports.routes'
 import posRouter from './routes/pos.routes'
 import systemRouter from './routes/system.routes'
+import auditRouter from './routes/audit.routes'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -74,6 +75,7 @@ app.use('/api/settings', settingsRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/pos', posRouter)
 app.use('/api/system', systemRouter)
+app.use('/api/audit', auditRouter)
 
 app.listen(PORT, () => {
   logger.info(`IMS-Pro API running on port ${PORT}`)

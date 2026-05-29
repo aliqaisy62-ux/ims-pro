@@ -9,6 +9,7 @@ import {
   returnInvoice,
   partialReturnInvoice,
 } from '../services/sales.service'
+import { logAudit } from '../services/audit.service'
 
 export async function listInvoices(req: Request, res: Response) {
   try {
@@ -49,6 +50,7 @@ export async function createInvoice(req: Request, res: Response) {
       })
     }
     const invoice = await createSalesInvoice(parsed.data, req.user!.id)
+    logAudit(req.user!.id, 'CREATE', 'SalesInvoice', invoice.id, undefined, req.ip)
     res.status(201).json({ success: true, data: invoice })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to create invoice'

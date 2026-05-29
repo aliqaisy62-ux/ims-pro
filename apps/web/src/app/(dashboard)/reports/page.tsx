@@ -53,6 +53,20 @@ const REPORT_CARDS: ReportCard[] = [
     href: '/reports/supplier-statement',
     color: 'bg-orange-50 border-orange-200 hover:bg-orange-100',
   },
+  {
+    title: 'أكثر المنتجات مبيعاً',
+    description: 'تصنيف المنتجات الأعلى مبيعاً حسب الكمية والإيراد خلال فترة زمنية',
+    icon: '🏆',
+    href: '/reports/top-sellers',
+    color: 'bg-rose-50 border-rose-200 hover:bg-rose-100',
+  },
+  {
+    title: 'أوقات الذروة',
+    description: 'تحليل توزيع المبيعات على ساعات اليوم لتحديد أوقات الانشغال القصوى',
+    icon: '⏰',
+    href: '/reports/peak-hours',
+    color: 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100',
+  },
 ]
 
 export default function ReportsPage() {

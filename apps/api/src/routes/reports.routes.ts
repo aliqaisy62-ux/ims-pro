@@ -15,5 +15,7 @@ router.get('/profit',                     requireRole('ADMIN', 'MANAGER', 'ACCOU
 router.get('/inventory',                  requireRole(...reportRoles), ctrl.inventoryReport)
 router.get('/customer-statement/:id',     requireRole(...reportRoles), ctrl.customerStatement)
 router.get('/supplier-statement/:id',     requireRole(...reportRoles), ctrl.supplierStatement)
+router.get('/top-sellers',               requireRole(...reportRoles), ctrl.topSellersHandler)
+router.get('/peak-hours',                requireRole(...reportRoles), ctrl.peakHoursHandler)
 
 export default router

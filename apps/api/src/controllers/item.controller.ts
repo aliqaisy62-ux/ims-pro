@@ -11,6 +11,7 @@ import {
   importItems,
   validateImportRows,
 } from '../services/item.service'
+import { logAudit } from '../services/audit.service'
 
 export async function listItems(req: Request, res: Response) {
   try {
@@ -51,6 +52,7 @@ export async function lookupByBarcode(req: Request, res: Response) {
 export async function addItem(req: Request, res: Response) {
   try {
     const item = await createItem(req.body)
+    if (req.user?.id) logAudit(req.user.id, 'CREATE', 'Item', item.id, undefined, req.ip)
     res.status(201).json({ success: true, data: item })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to create item'
@@ -64,6 +66,7 @@ export async function addItem(req: Request, res: Response) {
 export async function editItem(req: Request, res: Response) {
   try {
     const item = await updateItem(req.params.id, req.body)
+    if (req.user?.id) logAudit(req.user.id, 'UPDATE', 'Item', item.id, undefined, req.ip)
     res.json({ success: true, data: item })
   } catch {
     res.status(500).json({ success: false, error: 'Failed to update item' })
@@ -73,6 +76,7 @@ export async function editItem(req: Request, res: Response) {
 export async function deleteItem(req: Request, res: Response) {
   try {
     await softDeleteItem(req.params.id)
+    if (req.user?.id) logAudit(req.user.id, 'DELETE', 'Item', req.params.id, undefined, req.ip)
     res.json({ success: true })
   } catch {
     res.status(500).json({ success: false, error: 'Failed to delete item' })
