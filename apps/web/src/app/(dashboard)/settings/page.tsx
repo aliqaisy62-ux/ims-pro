@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { settingsService } from '@/services/settings.service'
 
-type Tab = 'business' | 'exchange' | 'print'
+type Tab = 'business' | 'exchange' | 'print' | 'system'
 
 interface ExchangeHistoryEntry {
   id: string
@@ -26,6 +26,12 @@ function formatDate(dateStr: string): string {
 export default function SettingsPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('business')
+
+  // ── System maintenance state ───────────────────────────────────────────────
+  const [dbPushLoading, setDbPushLoading] = useState(false)
+  const [dbPushOutput, setDbPushOutput] = useState<string | null>(null)
+  const [dbPushError, setDbPushError] = useState(false)
+  const [showOutputModal, setShowOutputModal] = useState(false)
 
   // ── Settings state ─────────────────────────────────────────────────────────
   const [settings, setSettings] = useState<Record<string, string>>({})
@@ -159,6 +165,26 @@ export default function SettingsPage() {
     }
   }
 
+  // ── DB Push ────────────────────────────────────────────────────────────────
+  async function handleDbPush() {
+    setDbPushLoading(true)
+    setDbPushOutput(null)
+    setDbPushError(false)
+    try {
+      const res = await settingsService.dbPush()
+      setDbPushOutput(res.output ?? 'تم التحديث بنجاح')
+      setDbPushError(false)
+      setShowOutputModal(true)
+    } catch (err: unknown) {
+      const data = (err as { response?: { data?: { output?: string; error?: string } } })?.response?.data
+      setDbPushOutput(data?.output ?? data?.error ?? 'حدث خطأ غير متوقع')
+      setDbPushError(true)
+      setShowOutputModal(true)
+    } finally {
+      setDbPushLoading(false)
+    }
+  }
+
   const tabClass = (tab: Tab) =>
     `px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
       activeTab === tab
@@ -188,6 +214,9 @@ export default function SettingsPage() {
         </button>
         <button className={tabClass('print')} onClick={() => setActiveTab('print')}>
           إعدادات الطباعة
+        </button>
+        <button className={tabClass('system')} onClick={() => setActiveTab('system')}>
+          صيانة النظام
         </button>
         <button
           onClick={() => router.push('/settings/users')}
@@ -492,7 +521,100 @@ export default function SettingsPage() {
             </button>
           </form>
         )}
+        {/* ── Tab 4: System Maintenance ────────────────────────────────────── */}
+        {activeTab === 'system' && (
+          <div className="max-w-2xl space-y-6">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">صيانة النظام</h2>
+
+            {/* DB Push card */}
+            <div className="border border-amber-200 dark:border-amber-700 rounded-xl p-5 bg-amber-50 dark:bg-amber-900/20">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl mt-0.5">🗄️</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    تحديث جداول قاعدة البيانات
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                    يقوم هذا الأمر بمزامنة هيكل قاعدة البيانات مع آخر تغييرات في ملف الـ Schema
+                    دون حذف البيانات الموجودة.
+                    <br />
+                    <span className="text-amber-600 dark:text-amber-400 font-medium">
+                      تحذير: استخدم هذا الخيار في بيئة التطوير فقط.
+                    </span>
+                  </p>
+                  <button
+                    onClick={handleDbPush}
+                    disabled={dbPushLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-semibold text-sm rounded-lg transition-colors min-h-[44px]"
+                  >
+                    {dbPushLoading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        جار التحديث...
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        تحديث جداول قاعدة البيانات
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Output Modal ──────────────────────────────────────────────────────── */}
+      {showOutputModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowOutputModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className={`flex items-center justify-between px-5 py-4 rounded-t-xl border-b border-gray-200 dark:border-gray-700 ${
+              dbPushError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{dbPushError ? '❌' : '✅'}</span>
+                <h3 className="font-semibold text-gray-900 dark:text-white" dir="rtl">
+                  {dbPushError ? 'فشل تحديث قاعدة البيانات' : 'تم تحديث قاعدة البيانات بنجاح'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowOutputModal(false)}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Terminal output */}
+            <div className="flex-1 overflow-auto p-4">
+              <pre className="text-xs font-mono text-gray-200 bg-gray-900 rounded-lg p-4 whitespace-pre-wrap break-words leading-relaxed min-h-[120px]">
+                {dbPushOutput}
+              </pre>
+            </div>
+
+            <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={() => setShowOutputModal(false)}
+                className="px-5 py-2 bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium rounded-lg"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

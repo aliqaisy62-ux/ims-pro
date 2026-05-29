@@ -15,4 +15,5 @@ export const settingsService = {
     api
       .post(`/api/settings/users/${id}/reset-password`, { newPassword })
       .then((r) => r.data),
+  dbPush: () => api.post('/api/system/db-push').then((r) => r.data),
 }
