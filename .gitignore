@@ -12,8 +12,11 @@ build/
 *.tsbuildinfo
 dist/
 
-# Environment
+# Environment — exclude all .env files except public templates
 .env
+.env.*
+!.env.example
+!.env.*.example
 .env.local
 .env.production
 .env*.local
