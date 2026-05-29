@@ -244,7 +244,7 @@ LAN private-IP regex also auto-allowed in `apps/api/src/index.ts`.
 | `/build:section11`| Cash Statement                   | ✅ DONE   |
 | `/build:section12`| Reports Module                   | ✅ DONE   |
 | `/build:section13`| Settings & Configuration         | ✅ DONE   |
-| `/build:section14`| Network / Deployment             | 🔄 IN PROGRESS |
+| `/build:section14`| Network / Deployment             | ✅ DONE        |
 | `/build:section15`| UI/UX Finalization               | ✅ DONE   |
 | `/build:section16`| Mobile APK Production Build      | ⏳ PENDING |
 | `/build:section17`| Testing & QA                     | ⏳ PENDING |

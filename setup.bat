@@ -52,7 +52,7 @@ if not exist ".env" (
   for /f "delims=" %%i in ('powershell -NoProfile -Command "[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(64))"') do set "JWT_SECRET=%%i"
   for /f "delims=" %%i in ('powershell -NoProfile -Command "[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(64))"') do set "JWT_REFRESH=%%i"
 
-  powershell -NoProfile -Command "$c=(Get-Content '.env'); $c=$c -replace 'JWT_SECRET=.*',('JWT_SECRET='+$env:JWT_SECRET); $c=$c -replace 'JWT_REFRESH_SECRET=.*',('JWT_REFRESH_SECRET='+$env:JWT_REFRESH); $c=$c -replace 'CORS_ORIGIN=.*','CORS_ORIGIN=http://%SERVER_IP%'; $c=$c -replace 'NEXT_PUBLIC_API_URL=.*','NEXT_PUBLIC_API_URL=http://%SERVER_IP%/api'; $c | Set-Content '.env'"
+  powershell -NoProfile -Command "$c=(Get-Content '.env'); $c=$c -replace 'JWT_SECRET=.*',('JWT_SECRET='+$env:JWT_SECRET); $c=$c -replace 'JWT_REFRESH_SECRET=.*',('JWT_REFRESH_SECRET='+$env:JWT_REFRESH); $c=$c -replace 'CORS_ORIGIN=.*','CORS_ORIGIN=http://%SERVER_IP%'; $c=$c -replace 'NEXT_PUBLIC_API_URL=.*','NEXT_PUBLIC_API_URL=http://%SERVER_IP%/api'; $c=$c -replace 'SEED_DB=.*','SEED_DB=true'; $c | Set-Content '.env'"
   echo [INFO]  .env created with secure auto-generated secrets.
 ) else (
   echo [WARN]  .env already exists — skipping. Edit manually if needed.
@@ -63,7 +63,17 @@ echo.
 echo ^> Creating directories...
 if not exist "backups" mkdir backups
 if not exist "uploads" mkdir uploads
-echo [INFO]  backups\ and uploads\ ready.
+if not exist "logs"    mkdir logs
+echo [INFO]  backups\, uploads\, logs\ ready.
+
+:: ─── 3b. Open Windows Firewall ports ──────────────────────
+echo.
+echo ^> Opening Windows Firewall ports 80, 4000...
+netsh advfirewall firewall show rule name="IMS-Pro HTTP" >nul 2>&1 || (
+  netsh advfirewall firewall add rule name="IMS-Pro HTTP"    dir=in action=allow protocol=TCP localport=80   >nul
+  netsh advfirewall firewall add rule name="IMS-Pro API"     dir=in action=allow protocol=TCP localport=4000 >nul
+  echo [INFO]  Firewall rules added (ports 80 and 4000).
+) && echo [WARN]  Firewall rules already exist.
 
 :: ─── 4. Build and start containers ────────────────────────
 echo.

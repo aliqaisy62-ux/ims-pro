@@ -39,6 +39,7 @@ COPY packages/ui ./packages/ui
 COPY packages/i18n ./packages/i18n
 COPY packages/types ./packages/types
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_OUTPUT_STANDALONE=1
 RUN npm run build --workspace=apps/web
 
 FROM base AS runner

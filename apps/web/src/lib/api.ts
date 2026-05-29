@@ -11,7 +11,9 @@ export function getAccessToken() {
 }
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001',
+  // Use relative /api so requests always route through Nginx on the same host.
+  // Override with NEXT_PUBLIC_API_URL at build time for non-Nginx deployments.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
   withCredentials: true,
 })
 
@@ -53,7 +55,7 @@ api.interceptors.response.use(
     isRefreshing = true
     try {
       const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/auth/refresh`,
+        `${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/refresh`,
         {},
         { withCredentials: true }
       )
