@@ -22,7 +22,7 @@
     "DATABASE_URL": "postgresql://${localEnv:DB_USER}:${localEnv:DB_PASSWORD}@localhost:5432/ims_pro",
     "NODE_ENV": "development",
     "PORT": "4001",
-    "CORS_ORIGIN": "http://localhost:3001",
+    "ALLOWED_ORIGINS": "http://localhost:3001",
     "JWT_SECRET": "${localEnv:JWT_SECRET}",
     "JWT_REFRESH_SECRET": "${localEnv:JWT_REFRESH_SECRET}",
     "EXCHANGE_RATE_IQD_USD": "1480"

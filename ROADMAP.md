@@ -83,7 +83,7 @@ Core system built. Mobile + production deployment + advanced features remaining.
 |------|--------|-------|
 | Dev server accessible via LAN (0.0.0.0 binding) | ✅ | Both ports 3001 + 4001 |
 | Windows Firewall rules (ports 3001, 4001) | ✅ | Created |
-| Public IP access configured | ✅ | See CORS_ORIGIN in .env |
+| Public IP access configured | ✅ | See ALLOWED_ORIGINS in .env |
 | CORS for public IP + LAN origins | ✅ | All 3 origins allowed |
 | Router port forwarding (3001, 4001) | ⏳ | User must configure router |
 | Docker production build (web + api images) | ⏳ | Dockerfiles exist |

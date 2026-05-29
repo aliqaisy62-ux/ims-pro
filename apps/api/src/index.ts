@@ -23,16 +23,29 @@ import systemRouter from './routes/system.routes'
 import auditRouter from './routes/audit.routes'
 
 // Fail fast on startup if required secrets are absent or obviously weak
-const envSchema = z.object({
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-})
+const envSchema = z
+  .object({
+    JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+    JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
+    DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+    ALLOWED_ORIGINS: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.NODE_ENV === 'production' && !data.ALLOWED_ORIGINS?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'ALLOWED_ORIGINS must be set in production (comma-separated list of allowed origins)',
+        path: ['ALLOWED_ORIGINS'],
+      })
+    }
+  })
 try {
   envSchema.parse(process.env)
 } catch (e) {
-  console.error('[startup] FATAL — missing or invalid environment variables:', e)
+  console.error('[startup] FATAL — missing or invalid environment variables:')
+  if (e instanceof z.ZodError) e.errors.forEach((err) => console.error(`  ${err.path.join('.')}: ${err.message}`))
+  else console.error(e)
   process.exit(1)
 }
 
@@ -46,16 +59,17 @@ app.set('trust proxy', 1)
 
 app.use(helmet())
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || (isDev ? 'http://localhost:3000,http://localhost:3001' : ''))
   .split(',')
   .map((s) => s.trim())
+  .filter(Boolean)
 
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true)
-    // LAN/private-network origins only in development — never in production with credentials
-    if (isDev && /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) return cb(null, true)
     if (allowedOrigins.includes(origin)) return cb(null, true)
+    // LAN/private-network origins: only in development, never in production
+    if (isDev && /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(origin)) return cb(null, true)
     cb(new Error(`CORS: origin ${origin} not allowed`))
   },
   credentials: true,

@@ -367,7 +367,7 @@ async function startServers() {
       JWT_REFRESH_SECRET:          secrets.JWT_REFRESH_SECRET,
       PORT:                        String(API_PORT),
       NODE_ENV:                    'production',
-      CORS_ORIGIN:                 `http://localhost:${WEB_PORT}`,
+      ALLOWED_ORIGINS:             `http://localhost:${WEB_PORT}`,
     })
   } else {
     log(`[app] API already on :${API_PORT}`)

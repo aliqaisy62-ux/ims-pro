@@ -188,7 +188,7 @@ $apiEnv = @{
   JWT_REFRESH_SECRET = $jwtRefreshSecret
   PORT               = "4001"
   NODE_ENV           = "development"
-  CORS_ORIGIN        = "http://localhost:3001"
+  ALLOWED_ORIGINS    = "http://localhost:3001"
 }
 foreach ($kv in $apiEnv.GetEnumerator()) { [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value) }
 

@@ -89,7 +89,7 @@ DB_PASSWORD         Database password (use a strong random value)
 DATABASE_URL        Full PostgreSQL connection string
 JWT_SECRET          64-byte random string  (openssl rand -base64 64)
 JWT_REFRESH_SECRET  64-byte random string  (openssl rand -base64 64)
-CORS_ORIGIN         Allowed frontend origin(s)
+ALLOWED_ORIGINS     Allowed frontend origin(s) — required in production
 SEED_ADMIN_PASSWORD Strong password for the initial admin (when SEED_DB=true)
 ```
 

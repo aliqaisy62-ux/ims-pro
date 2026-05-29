@@ -43,7 +43,7 @@ if [ ! -f .env ]; then
 
   sed -i.bak "s|JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|"                        .env
   sed -i.bak "s|JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=${JWT_REFRESH}|"       .env
-  sed -i.bak "s|CORS_ORIGIN=.*|CORS_ORIGIN=http://${SERVER_IP}|"                .env
+  sed -i.bak "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=http://${SERVER_IP}|"         .env
   sed -i.bak "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api|" .env
   rm -f .env.bak
   info ".env created with secure auto-generated secrets."

@@ -32,7 +32,7 @@ services:
       DIRECT_URL: postgresql://${DB_USER}:${DB_PASSWORD}@ims-pro-db:5432/${DB_NAME:-ims_pro}
       NODE_ENV: development
       PORT: 4001
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3001}
       HTTPS_ENABLED: "false"
     ports:
       - "4001:4001"
